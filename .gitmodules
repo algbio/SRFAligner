@@ -1,0 +1,6 @@
+[submodule "tools/founderblockgraphs"]
+	path = tools/founderblockgraphs
+	url = https://github.com/algbio/founderblockgraphs.git
+[submodule "tools/vcf2multialign"]
+	path = tools/vcf2multialign
+	url = https://github.com/tsnorri/vcf2multialign
