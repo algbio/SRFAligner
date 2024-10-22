@@ -1,0 +1,30 @@
+M	2	36
+X	1	4	7	11	15	19	22	26	30	34
+B	1	1	2	1	1	1	2	1	1	2
+S	0	TAC
+S	1	AGT
+L	0	+	1	+	0M
+S	2	GAA
+S	3	GAAA
+L	1	+	2	+	0M
+L	1	+	3	+	0M
+S	4	CAAT
+L	2	+	4	+	0M
+L	3	+	4	+	0M
+S	5	GCTA
+L	4	+	5	+	0M
+S	6	GGG
+L	5	+	6	+	0M
+S	7	AGA
+S	8	AGAG
+L	6	+	7	+	0M
+L	6	+	8	+	0M
+S	9	GCTG
+L	7	+	9	+	0M
+L	8	+	9	+	0M
+S	10	CCTA
+L	9	+	10	+	0M
+S	11	TAT
+S	12	TT
+L	10	+	11	+	0M
+L	10	+	12	+	0M

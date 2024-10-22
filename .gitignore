@@ -1,3 +1,6 @@
 experiments/vcf-to-hapl-to-efg/output
 experiments/vcf-to-hapl-to-efg/chr22_uppercase.fasta
 experiments/vcf-to-hapl-to-efg/1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz
+
+tools/efg-locate/efg-locate
+tools/efg-locate/test/output-*

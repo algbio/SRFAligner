@@ -4,3 +4,9 @@
 [submodule "tools/vcf2multialign"]
 	path = tools/vcf2multialign
 	url = https://github.com/tsnorri/vcf2multialign
+[submodule "tools/concurrentqueue"]
+	path = tools/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue
+[submodule "tools/sdsl-lite-v3"]
+	path = tools/sdsl-lite-v3
+	url = https://github.com/xxsds/sdsl-lite
