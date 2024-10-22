@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
 	std::atomic<bool> input_done = false;
 	std::thread inputworker;
 	vector<string> pattern_ids, patterns;
-	if (argsinfo.approximate_flag && params.threads > 1) {
+	if (argsinfo.approximate_flag && params.threads > 0) {
 		std::cerr << "Locate" << std::endl;
 		inputworker = std::thread(reader_worker, std::ref(params.patternsfs), std::ref(input_done));
 	} else {

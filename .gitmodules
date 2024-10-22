@@ -10,3 +10,6 @@
 [submodule "tools/sdsl-lite-v3"]
 	path = tools/sdsl-lite-v3
 	url = https://github.com/xxsds/sdsl-lite
+[submodule "tools/GraphAligner"]
+	path = tools/GraphAligner
+	url = https://github.com/nrizzo/GraphAligner
