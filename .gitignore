@@ -4,3 +4,5 @@ experiments/vcf-to-hapl-to-efg/1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.
 
 tools/efg-locate/efg-locate
 tools/efg-locate/test/output-*
+
+test/*.gaf

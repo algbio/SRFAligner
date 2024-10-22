@@ -1,0 +1,182 @@
+#!/bin/bash
+set -e
+set -o pipefail
+thisfolder=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ) # https://stackoverflow.com/questions/59895/how-do-i-get-the-directory-where-a-bash-script-is-located-from-within-the-script
+
+# executables absolute paths/commands (make sure they work!)
+efglocate=$thisfolder/tools/efg-locate/efg-locate
+graphaligner=$thisfolder/tools/GraphAligner/bin/GraphAligner
+
+# default params
+workingfolder="."
+threads=8 # threads
+edgemincount=0 # semi-repeat-free seeds only
+extendoptions="--max-cluster-extend 5 -b 10" # GraphAligner default extend options
+discardoption="(substr(\$16,6) > 0.90) && ((\$4-\$3)*100/\$2 >= 50)" # using -c option, discard alignments with identity <= 90% and read coverage < 50%
+
+print_help()
+{
+   echo "Pipeline to align long reads to indexable Elastic Founder Graphs based on semi-repeat-free seeds"
+   echo "usage: SRFAligner -g graph.gfa -f reads.fastq -a alignments.gaf"
+   echo "	-h --help:  show this screen"
+   echo "	-g graph.gfa: semi-repeat-free EFG in xGFA format"
+   echo "	-f reads.fastq: reads in FASTQ format"
+   echo "	-a alignmentsout.gaf: output alignments in GAF format"
+   echo "	-t threads: # of threads"
+   echo "	-i IGNORECHARS : ignore the following characters for indexability/seed finding"
+   echo "	-c : discard short or alignments and run GraphAligner on unaligned reads"
+   echo "	-p : disable pipeline mode and save the seeds in working folder"
+   echo "	-e : make GraphAligner consider each single seed (cluster) for extension"
+   echo "	-m edgemincount: heuristic parameter for seed computation (see efg-locate)"
+   echo "	-w path: working folder for output and temporary files"
+}
+
+# https://stackoverflow.com/questions/12022592/how-can-i-use-long-options-with-the-bash-getopts-builtin
+for arg in "$@"; do
+	shift
+	case "$arg" in
+		'--help')                set -- "$@" '-h'   ;;
+		*)                       set -- "$@" "$arg" ;;
+	esac
+done
+
+while getopts "hepcg:f:a:t:w:m:i:" option; do
+	case $option in
+		h) # display help
+			print_help
+			exit;;
+		g) # graph
+			argg=true
+			graph="$OPTARG" ;;
+		f) # fastq reads
+			argf=true
+			reads="$OPTARG" ;;
+		a) # output
+			arga=true
+			alignmentsout="$OPTARG" ;;
+		t) # threads
+			argt=true
+			threads="$OPTARG" ;;
+		i) # ignorechars
+			argi=true
+			ignorechars="$OPTARG" ;;
+		w) # working folder
+			argw=true
+			workingfolder="$OPTARG" ;;
+		c) # discard short alignment heuristic flag
+			argc=true ;;
+		p) # disable pipeline mode flag
+			argp=true ;;
+		e) # extend all clusters
+			arge=true ;;
+		m) # edgemincount parameter
+			argm=true
+			edgemincount="$OPTARG" ;;
+		\?) # invalid option
+			echo "Error: Invalid option"
+			print_help
+			exit;;
+	esac
+done
+if [[ "$argg" != true ]] || [[ "$argf" != true ]] ; then
+	print_help
+	exit
+fi
+
+ignorecharsarg=""
+if [[ "$argi" = true ]] ; then
+	ignorecharsarg="--ignore-chars=$ignorechars"
+fi
+
+if [[ "$arge" = true ]] ; then
+	extendoptions="--max-cluster-extend -1 --multimap-score-fraction 0.00 -b 10"
+fi
+
+# move to working folder
+if [[ "$argw" = true ]] ; then
+	workingfolder="${workingfolder%/}"
+else
+	workingfolder="."
+fi
+
+if [[ "$argp" = true ]] ; then
+	# find semi-repeat-free seeds
+	$efglocate --approximate --split-output-matches-graphaligner --reverse-complement --overwrite \
+		$ignorecharsarg \
+		--threads $threads \
+		--approximate-edge-match-min-count $edgemincount \
+		$graph \
+		<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
+		"$workingfolder/$(basename reads)_srf_seeds.gaf"
+
+	# GraphAligner extend
+	$graphaligner $extendoptions \
+		-t $threads \
+		-g $graph \
+		-f $reads \
+		--realign "$workingfolder/$(basename reads)_srf_seeds.gaf" \
+		-a $alignmentsout
+
+	if [[ "$argc" = true ]] ; then
+		awk -i inplace "{if ($discardoption) {print}}" "$alignmentsout"
+
+		grep -A 1 --no-group-separator \
+			-f <(grep -v \
+				-f <(cut -f1 $alignmentsout | uniq) \
+				<(awk 'NR % 4 == 1' $reads | cut -d' ' -f1 | tr -d "@")) \
+			<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
+			> "$workingfolder/$(basename reads)_unaligned_reads.fasta"
+
+		$graphaligner -x "vg" \
+			-t $threads \
+			-g $graph \
+			-f "$workingfolder/$(basename reads)_unaligned_reads.fasta" \
+			-a "$workingfolder/$(basename reads)_unaligned_reads.gaf"
+		cat "$workingfolder/$(basename reads)_unaligned_reads.gaf" >> $alignmentsout
+	fi
+else
+	# pipeline of above commands
+
+	if [[ "$argc" = true ]] ; then
+		# set up final GraphAligner call
+		fastapipe=$(mktemp -u --suffix ".fasta")
+		mkfifo -m 600 $fastapipe
+		trap '{ rm -f -- "$fastapipe"; }' EXIT
+
+		# TODO find a way to not store on disk the unaligned alignments and directly append them
+		$graphaligner -x "vg" \
+			-t $threads \
+			-g $graph \
+			-f $fastapipe \
+			-a "$workingfolder/unaligned_reads_$$.gaf" &
+	fi
+
+	$efglocate --approximate --split-output-matches-graphaligner --reverse-complement --overwrite \
+		$ignorecharsarg \
+		--threads $threads \
+		--approximate-edge-match-min-count $edgemincount \
+		$graph \
+		<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
+		/dev/stdout | \
+	$graphaligner $extendoptions \
+		-t $threads \
+		-g $graph \
+		-f $reads \
+		--realign /dev/stdin \
+		-a $alignmentsout
+
+	if [[ "$argc" = true ]] ; then
+		awk -i inplace "{if ($discardoption) {print}}" "$alignmentsout"
+
+		grep -A 1 --no-group-separator \
+			-f <(grep -v \
+				-f <(cut -f1 $alignmentsout | uniq) \
+				<(awk 'NR % 4 == 1' $reads | cut -d' ' -f1 | tr -d "@")) \
+			<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
+			> $fastapipe
+
+		wait $(jobs -p)
+		cat "$workingfolder/unaligned_reads_$$.gaf" >> $alignmentsout
+		rm "$workingfolder/unaligned_reads_$$.gaf"
+	fi
+fi
