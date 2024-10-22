@@ -489,7 +489,7 @@ void inline output_edge_count_matches(const Elasticfoundergraph &efg, const stri
 						efg.get_label_length(startnode) + efg.get_label_length(endnode),
 						position,
 						position + (startq+1-qq)));
-			assert(match.back().check(efg, pattern));
+			//assert(match.back().check(efg, pattern)); // TODO implement faster sanity check
 		}
 }
 
@@ -581,7 +581,7 @@ int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pat
 					pathlength,
 					first_node_pos,
 					first_node_pos + (startq+1-(q+1))));
-		assert(match.back().check(efg, pattern));
+		//assert(match.back().check(efg, pattern));
 		return 1;
 	} else {
 		int u_node_pos;
@@ -601,7 +601,7 @@ int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pat
 						pathlength,
 						first_node_pos,
 						first_node_pos + (startq+1-(q+1))));
-			assert(match.back().check(efg, pattern));
+			//assert(match.back().check(efg, pattern));
 			return 1;
 		}
 	}
@@ -621,7 +621,7 @@ int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pat
 					pathlength,
 					first_node_pos,
 					first_node_pos + (f-(q+1))));
-		assert(match.back().check(efg, pattern));
+		//assert(match.back().check(efg, pattern));
 		return 1;
 	}
 
