@@ -1,0 +1,13 @@
+M	2	12
+X	1	2	6	9
+B	1	1	2	1
+S	n1	A
+S	n2	TACT
+S	n3	ACT
+S	n4	TTT
+S	n5	AACT
+L	n1	+	n2	+	0M
+L	n2	+	n3	+	0M
+L	n2	+	n4	+	0M
+L	n3	+	n5	+	0M
+L	n4	+	n5	+	0M

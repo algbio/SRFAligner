@@ -5,12 +5,12 @@ HEADERS=-I ../sdsl-lite-v3/include -I ../concurrentqueue
 all : efg-locate
 
 efg-locate : efg-locate.cpp efg.hpp algo.cpp command-line-parsing/cmdline.h command-line-parsing/cmdline.c
-	/home/nicrizzo/miniconda3/bin/x86_64-conda-linux-gnu-g++ $(CPPFLAGS) $(HEADERS) \
+	g++ $(CPPFLAGS) $(HEADERS) \
 	efg-locate.cpp command-line-parsing/cmdline.c \
 	-o efg-locate
 
 command-line-parsing/cmdline%c command-line-parsing/cmdline%h : command-line-parsing/config.ggo
-	/home/nicrizzo/gengetopt-2.23/src/gengetopt \
+	gengetopt \
 		--input=./command-line-parsing/config.ggo \
 		--output-dir=./command-line-parsing/ \
 		--unnamed-opts

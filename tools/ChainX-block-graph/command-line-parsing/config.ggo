@@ -1,0 +1,21 @@
+version	"0.0"
+package	"chainx-block-graph"
+purpose	"Program to perform colinear chaining on Elastic Founder Graphs"
+usage	"chainx-block-graph (--global|--semi-global) graph.gfa anchors.gaf output.gaf"
+
+description	"The program takes in input an Elastic Founder Graph (xGFA) and exact matches between text queries and the graph (GAF), it computes the anchor-restricted edit distance between the queries and the (relaxation of the) graph, and outputs the corresponding chain in GAF format."
+
+option	"chain-to-eds"	-	"Perform chaining on the Elastic Degenerate String relaxation of the graph (currently the only implemented chaining solution)"	flag	on
+option	"global"	g	"Chain between the whole query and any maximal graph path"	flag off
+option	"semi-global"	s	"Chain between the whole query and any graph subpath"	flag off
+option	"unsorted-input"	-	"Do not assume the input GAF anchors to be sorted (at the cost of loading all anchors)"	flag off
+option	"no-split-output-matches"		-	"Do not split edge matches into node matches in the output chains"	flag off
+option	"initial-guess"		-	"Fix a constant starting guess for the cost of the optimal chain"	long	typestr = "GUESS"	default="100"	optional
+option	"initial-guess-coverage"	-	"Have the starting guess for the optimal cost be a fraction of the inverse coverage of the read (GUESS * (read length - read coverage)) instead of a constant (by default this is disabled)"	double	typestr = "GUESS"	default="0"	optional
+option	"ramp-up-factor"	-	"At each chaining iteration, multiply by RAMPUP the guess for the cost of the optimal chain"	double	typestr = "RAMPUP"	default="4.0"	optional
+option	"alternative-chains"		a	"Chain N+1 times, removing the used anchors after each execution, and output all chains"	long	typestr = "N"	default="0"	optional
+
+option	"threads"		t	"Max # threads"		long	typestr = "THREADNUM"	default = "-1"	optional
+option	"overwrite"	-	"Overwrite the output file, if it exists"	flag	off
+
+option	"split-output-matches-graphaligner"	-	"Filter out node matches of length 1 for use in GraphAligner"	flag off	hidden
