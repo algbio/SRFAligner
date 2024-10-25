@@ -17,6 +17,10 @@ chainingguess="--initial-guess-coverage=0.5 --ramp-up-factor=1.5"
 extendoptions="--max-cluster-extend 5 -b 10" # GraphAligner default extend options
 discardoption="(substr(\$16,6) > 0.90) && ((\$4-\$3)*100/\$2 >= 50)" # using -c option, discard alignments with identity <= 90% and read coverage < 50%
 
+# load balancing
+locatework=(32 32 22 14 14 11 10 9 8 7 6)
+chainwork=(8 25 32 32 32 32 32 32 32 32 32)
+
 print_help()
 {
    echo "Pipeline to align long reads to indexable Elastic Founder Graphs based on chained semi-repeat-free seeds"
@@ -33,6 +37,34 @@ print_help()
    echo "	-m edgemincount: heuristic parameter for seed computation (see efg-locate)"
    echo "	-n altchains : heuristic parameter to chain an additional n times for each strand"
    echo "	-w path: working folder for output and temporary files"
+}
+
+load_balance()
+{
+	m=$2
+	if (( $m >= ${#locatework[@]} ))
+	then
+		m=$(( ${#locatework[@]} - 1 ))
+	fi
+
+
+	threads1=$(( $1 * ${chainwork[$m]} / (${chainwork[$m]} + ${locatework[$m]})))
+	threads1=$(( threads1 >= $1 ? $1 - 1 : threads1 ))
+	threads1=$(( threads1  <  1 ?      1 : threads1 ))
+	#if (( ${locatework[$m]} >= ${chainwork[$m]} ))
+	#then
+	#	threads2=$(( ($1 * 100 * ${ratiodivisor[$m]}) / (200 * ${ratiodividend[$m]}) ))
+	#	threads2=$(( threads2 >= $1 ? $1 - 1 : threads2 ))
+	#	threads2=$(( threads2  <  1 ?      1 : threads2 ))
+	#	threads1=$(( $1 - threads2 ))
+	#else
+	#	threads1=$(( ($1 * 100 * ${ratiodividend[$m]}) / (200 * ${ratiodivisor[$m]}) ))
+	#	threads1=$(( threads1 >= $1 ? $1 - 1 : threads1 ))
+	#	threads1=$(( threads1  <  1 ?      1 : threads1 ))
+	#	threads2=$(( $1 - threads1 ))
+	#fi
+
+	echo "$(($1 - $threads1))"
 }
 
 # https://stackoverflow.com/questions/12022592/how-can-i-use-long-options-with-the-bash-getopts-builtin
@@ -88,6 +120,11 @@ done
 if [[ "$argg" != true ]] || [[ "$argf" != true ]] ; then
 	print_help
 	exit
+fi
+
+if [[ "$argp" != true ]] && [[ "$threads" -lt 2 ]] ; then
+	echo "Please pick at least 2 threads in pipeline mode!"
+	exit 1
 fi
 
 ignorecharsarg=""
@@ -166,8 +203,9 @@ else
 			-a "$workingfolder/unaligned_reads_$$.gaf" &
 	fi
 
-	efglocatethreads=$(( $threads / 2 ))
+	efglocatethreads=$(load_balance $threads $edgemincount)
 	chainxthreads=$(( $threads - $efglocatethreads ))
+	echo "load balance: $efglocatethreads for locate, $chainxthreads for chaining"
 	$efglocate --approximate --split-output-matches --reverse-complement --rename-reverse-complement --overwrite \
 		--threads $efglocatethreads \
 		--approximate-edge-match-min-count $edgemincount \

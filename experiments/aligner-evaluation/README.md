@@ -18,6 +18,6 @@ The scripts `runexp.sh` expect `/usr/bin/time`, `openssl`, and `awk` to be insta
 todo
 
 ## todo
-- [] test chaining
+- [] docs
 - [] test GraphAligner on vg graphs
 - [] test other aligners

@@ -13,3 +13,4 @@ test/*.gaf
 experiments/aligner-evaluation/scripts/__pycache__
 experiments/aligner-evaluation/input/*
 experiments/aligner-evaluation/semi-repeat-free/output
+experiments/aligner-evaluation/chaining/output
