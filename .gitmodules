@@ -19,3 +19,10 @@
 [submodule "tools/GraphChainer"]
 	path = tools/GraphChainer
 	url = https://github.com/algbio/GraphChainer
+[submodule "tools/minichain"]
+	path = tools/minichain
+	url = https://github.com/at-cg/minichain
+	ignore = untracked
+[submodule "tools/minigraph"]
+	path = tools/minigraph
+	url = https://github.com/lh3/minigraph
