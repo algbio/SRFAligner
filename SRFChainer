@@ -15,7 +15,7 @@ edgemincount=0 # semi-repeat-free seeds only
 alternativechains=0
 chainingguess="--initial-guess-coverage=0.5 --ramp-up-factor=1.5"
 extendoptions="--max-cluster-extend 5 -b 10" # GraphAligner default extend options
-discardoption="(substr(\$16,6) > 0.90) && ((\$4-\$3)*100/\$2 >= 50)" # using -c option, discard alignments with identity <= 90% and read coverage < 50%
+discardoption="(substr(\$16,6) > 0.90) && ((\$4-\$3)*100/\$2 >= 50)" # using -c option, discard alignments with identity <= 90% or read coverage < 50%
 
 # load balancing
 locatework=(32 32 22 14 14 11 10 9 8 7 6)
@@ -31,7 +31,7 @@ print_help()
    echo "	-a alignmentsout.gaf: output alignments in GAF format"
    echo "	-t threads: # of threads"
    echo "	-i IGNORECHARS : ignore the following characters for indexability/seed finding"
-   echo "	-c : discard short alignments and run GraphAligner on unaligned reads"
+   echo "	-c : discard bad alignments (identity <= 0.9 or read coverage < 50%) and run GraphAligner on unaligned reads"
    echo "	-p : disable pipeline mode and save the seeds in working folder"
    echo "	-e : make GraphAligner consider each single seed (cluster) for extension"
    echo "	-m edgemincount: heuristic parameter for seed computation (see efg-locate)"
@@ -51,18 +51,6 @@ load_balance()
 	threads1=$(( $1 * ${chainwork[$m]} / (${chainwork[$m]} + ${locatework[$m]})))
 	threads1=$(( threads1 >= $1 ? $1 - 1 : threads1 ))
 	threads1=$(( threads1  <  1 ?      1 : threads1 ))
-	#if (( ${locatework[$m]} >= ${chainwork[$m]} ))
-	#then
-	#	threads2=$(( ($1 * 100 * ${ratiodivisor[$m]}) / (200 * ${ratiodividend[$m]}) ))
-	#	threads2=$(( threads2 >= $1 ? $1 - 1 : threads2 ))
-	#	threads2=$(( threads2  <  1 ?      1 : threads2 ))
-	#	threads1=$(( $1 - threads2 ))
-	#else
-	#	threads1=$(( ($1 * 100 * ${ratiodividend[$m]}) / (200 * ${ratiodivisor[$m]}) ))
-	#	threads1=$(( threads1 >= $1 ? $1 - 1 : threads1 ))
-	#	threads1=$(( threads1  <  1 ?      1 : threads1 ))
-	#	threads2=$(( $1 - threads1 ))
-	#fi
 
 	echo "$(($1 - $threads1))"
 }
