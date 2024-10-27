@@ -19,5 +19,6 @@ todo
 
 ## todo
 - [] docs
+- [] explain datasets used
 - [] test GraphAligner on vg graphs
 - [] test other aligners
