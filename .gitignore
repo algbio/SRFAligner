@@ -8,6 +8,8 @@ tools/efg-locate/test/output-*
 tools/ChainX-block-graph/chainx-block-graph
 tools/ChainX-block-graph/test/output-*
 
+tools/efg-gaf-splitter/efg-gaf-splitter
+
 test/*.gaf
 
 experiments/aligner-evaluation/scripts/__pycache__

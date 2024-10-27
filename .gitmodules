@@ -26,3 +26,7 @@
 [submodule "tools/minigraph"]
 	path = tools/minigraph
 	url = https://github.com/lh3/minigraph
+[submodule "tools/efg-mems"]
+	path = tools/efg-mems
+	url = https://github.com/algbio/efg-mems
+	branch = mapped-output

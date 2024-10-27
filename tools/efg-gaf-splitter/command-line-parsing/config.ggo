@@ -1,0 +1,6 @@
+version	"devel"
+package	"efg-gaf-splitter"
+purpose	"Program to split GAF matches into node matches that are valid GraphAligner seeds"
+usage	"efg-gaf-splitter graph.gfa seeds.gaf"
+
+description	"The program takes in input an Elastic Founder Graph (xGFA) and a set of GAF exact matches, and outputs in stdout the matches split into node matches, filtering node matches of length 1."
