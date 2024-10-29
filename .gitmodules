@@ -10,9 +10,6 @@
 [submodule "tools/sdsl-lite-v3"]
 	path = tools/sdsl-lite-v3
 	url = https://github.com/xxsds/sdsl-lite
-[submodule "tools/GraphAligner"]
-	path = tools/GraphAligner
-	url = https://github.com/nrizzo/GraphAligner
 [submodule "tools/Badread"]
 	path = tools/Badread
 	url = https://github.com/rrwick/Badread
@@ -30,3 +27,6 @@
 	path = tools/efg-mems
 	url = https://github.com/algbio/efg-mems
 	branch = mapped-output
+[submodule "tools/GraphAligner"]
+	path = tools/GraphAligner
+	url = https://github.com/maickrau/GraphAligner

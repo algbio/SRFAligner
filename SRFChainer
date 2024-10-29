@@ -189,6 +189,8 @@ else
 			-g $graph \
 			-f $fastapipe \
 			-a "$workingfolder/unaligned_reads_$$.gaf" &
+		# give GraphAligner a dummy "file", see https://github.com/maickrau/GraphAligner/issues/105
+		set +eo pipefail ; { echo > $fastapipe & } ; set -eo pipefail
 	fi
 
 	efglocatethreads=$(load_balance $threads $edgemincount)
