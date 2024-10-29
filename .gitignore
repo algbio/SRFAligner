@@ -18,3 +18,4 @@ experiments/aligner-evaluation/semi-repeat-free/output
 experiments/aligner-evaluation/chaining/output
 experiments/aligner-evaluation/final/output
 experiments/aligner-evaluation/mems/output
+experiments/aligner-evaluation/vg-comparison/output
