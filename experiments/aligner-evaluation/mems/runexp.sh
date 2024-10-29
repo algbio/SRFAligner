@@ -81,6 +81,7 @@ do
 		--alignments output/best_${alignment}_alignments.gaf \
 		--metrics output/metrics_${alignment}.mts &
 done
+wait $(jobs -p)
 
 python3 ../scripts/compute_metrics.py \
 	--output-name output/results \
