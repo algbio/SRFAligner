@@ -7,10 +7,10 @@
 `SRFAligner` and `SRFChainer` depend on `efg-locate`, `chainx-block-graph`, and `GraphAligner`. To clone this repository and compile the first two:
 ```
 git clone https://github.com/algbio/SRFAligner && cd SRFAligner
-git submodule update --init tools/sdsl-lite-v3
+git submodule update --init tools/{sdsl-lite-v3,concurrentqueue}
 make
 ```
-and `GraphAligner`'s executable is expected to be found in folder `tools/GraphAligner/bin`, so you can execute `git submodule update --init --recursive tools/GraphAligner` and follow its compilation instructions. If `GraphAligner` is already installed in your system, you can just modify the relative line in `SRFAligner` and `SRFChainer`:
+and `GraphAligner`'s executable is expected to be found in folder `tools/GraphAligner/bin`, so you can run command `git submodule update --init --recursive tools/GraphAligner` and follow its compilation instructions. If `GraphAligner` is already installed in your system, you can just modify the relative line in `SRFAligner` and `SRFChainer`:
 ```
 sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFAligner
 sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFChainer
