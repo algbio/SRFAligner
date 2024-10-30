@@ -4,8 +4,8 @@ set -o pipefail
 thisfolder=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ) # https://stackoverflow.com/questions/59895/how-do-i-get-the-directory-where-a-bash-script-is-located-from-within-the-script
 
 # executables' absolute paths/commands (make sure they work!)
-efglocate=$thisfolder/tools/efg-locate/efg-locate
 graphaligner=$thisfolder/tools/GraphAligner/bin/GraphAligner
+efglocate=$thisfolder/tools/efg-locate/efg-locate
 
 # default params
 workingfolder="."
