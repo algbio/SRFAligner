@@ -14,4 +14,13 @@ and `GraphAligner`'s executable is expected to be found in folder `tools/GraphAl
 ```
 sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFAligner
 sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFChainer
+sed --in-place '7s/.*/graphaligner=GraphAligner/' efg-memsAligner
+```
+Finally, to use MEM seeds computed by `efg-mems`, `efg-memsAligner` expects `efg-mems`'s executable to be in `tools/efg-mems/efg-mems`:
+```
+git submodule update --init --recursive tools/efg-mems
+cd tools/efg-mems/sdsl-lite
+./install.sh .
+cd ..
+cmake .
 ```

@@ -14,7 +14,7 @@ efgmemsaligner=$thisfolder/../../../efg-memsAligner
 usrbintime=/usr/bin/time
 
 # params
-inputgraph=$thisfolder/../input/covid19-100-N-simplified.gfa
+inputgraph=$thisfolder/../input/covid19_100_iEFG_simplified.gfa
 coverage=1000
 threads=1
 
@@ -79,7 +79,7 @@ do
 		--path output/sim_reads_path.nodes \
 		--fasta output/sim_reads_path.fasta \
 		--alignments output/best_${alignment}_alignments.gaf \
-		--metrics output/metrics_${alignment}.mts &
+		--metrics output/metrics_${alignment}.mts
 done
 wait $(jobs -p)
 

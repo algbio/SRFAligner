@@ -12,7 +12,7 @@ graphaligner=$thisfolder/../../../tools/GraphAligner/bin/GraphAligner
 usrbintime=/usr/bin/time
 
 # params
-inputgraphs=($thisfolder/../input/t2t-1KGP-phased-hapl-complete-250-heur-unsimplified.gfa $thisfolder/../input/vg-t2t-1KGP-phased-hapl-complete.gfa $thisfolder/../input/vgmsa-t2t-1KGP-phased-hapl-complete.gfa)
+inputgraphs=($thisfolder/../input/chr22_iEFG.gfa $thisfolder/../input/chr22_vg.gfa $thisfolder/../input/chr22_vg_msa.gfa)
 graphnames=(iefg vg vgmsa)
 coverage=30
 threads=64
@@ -85,7 +85,7 @@ do
 				--path $path \
 				--fasta $fasta \
 				--alignments $alignments \
-				--metrics output/metrics_${graphname}_graph_${graphname}_reads.mts &
+				--metrics output/metrics_${graphname}_graph_${graphname}_reads.mts
 		else
 			# we do not have ground truth
 			datasetname="${graphnames[$g2]}"
@@ -96,7 +96,7 @@ do
 				--graph $inputgraph \
 				--fastq $reads \
 				--alignments $alignments \
-				--metrics output/metrics_${graphname}_graph_${datasetname}_reads.mts &
+				--metrics output/metrics_${graphname}_graph_${datasetname}_reads.mts
 		fi
 	done
 done

@@ -16,7 +16,7 @@ minichain=$thisfolder/../../../tools/minichain/minichain
 usrbintime=/usr/bin/time
 
 # params
-inputgraph=$thisfolder/../input/t2t-1KGP-phased-hapl-complete-250-heur-unsimplified.gfa
+inputgraph=$thisfolder/../input/chr22_iEFG.gfa
 coverage=30
 threads=64
 
@@ -103,7 +103,7 @@ do
 		--path output/sim_reads_path.nodes \
 		--fasta output/sim_reads_path.fasta \
 		--alignments output/${alignment}_alignments.gaf \
-		--metrics output/metrics_${alignment}.mts &
+		--metrics output/metrics_${alignment}.mts
 done
 wait $(jobs -p)
 

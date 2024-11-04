@@ -13,7 +13,7 @@ srfaligner=$thisfolder/../../../SRFAligner
 usrbintime=/usr/bin/time
 
 # params
-inputgraph=$thisfolder/../input/t2t-1KGP-phased-hapl-complete-250-heur-unsimplified.gfa
+inputgraph=$thisfolder/../input/chr22_iEFG.gfa
 coverage=30
 threads=64
 
@@ -89,7 +89,7 @@ do
 		--path output/sim_reads_path.nodes \
 		--fasta output/sim_reads_path.fasta \
 		--alignments output/best_${alignment}_alignments.gaf \
-		--metrics output/metrics_${alignment}.mts &
+		--metrics output/metrics_${alignment}.mts
 done
 for m in 1 2 3 4 5 6 7 8 9 10
 do
@@ -100,7 +100,7 @@ do
 		--path output/sim_reads_path.nodes \
 		--fasta output/sim_reads_path.fasta \
 		--alignments output/best_srf_edge_${m}_alignments.gaf \
-		--metrics output/metrics_srf_edge_${m}.mts &
+		--metrics output/metrics_srf_edge_${m}.mts
 done
 wait $(jobs -p)
 
