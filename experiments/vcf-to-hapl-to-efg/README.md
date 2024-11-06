@@ -1,4 +1,4 @@
-#vcf-to-hapl-to-efg experiment
+# vcf-to-hapl-to-efg experiment
 Pipeline to build an indexable Elastic Founder Graph from a VCF file plus reference. After checking out the 'Prerequisites' and 'Datasets and obtaining the input data' sections, you can build the chromosome 22 iEFG with command
 ```
 /usr/bin/time ./sample-and-build-efg-heuristic.sh -f chr22_uppercase.fasta -v 1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz -c chr22 -s 2504 -M 250 -t 32
@@ -15,13 +15,13 @@ The pipeline expects [`bcftools`](https://www.htslib.org/download/) and [`vcf2mu
 We use the [phased T2T 1KGP panel](https://zenodo.org/records/7612953) (Version 1.0) by Joseph Lalli, based on [T2T-CHM13v2.0](https://github.com/marbl/CHM13). Assuming `seqtk` is installed, we can easily obtain chromosome 22 as follows:
 ```
 wget "https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/chm13v2.0.fa.gz"
-seqtk subseq chm13v2.0.fa.gz <(echo "chr22") > chr22_uppercase.fasta
-seqtk subseq ~/../scratch-hdd/nicrizzo/datasets/t2t/chm13v2.0.fa.gz <(echo "chr22") | seqtk seq -U - > chr22_uppercase.fasta
+seqtk subseq chm13v2.0.fa.gz <(echo "chr22") | seqtk seq -U - > chr22_uppercase.fasta
 ```
 and obtain the chr22 variations as follow:
 ```
 wget "https://zenodo.org/records/7612953/files/phased_T2T_panel.tar"
 tar -xvf phased_T2T_panel.tar phased_T2T_panel/1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz --strip-components 1
+tar -xvf phased_T2T_panel.tar phased_T2T_panel/1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz.tbi --strip-components 1
 ```
 
 ## Versions of the software used

@@ -1,6 +1,7 @@
 experiments/vcf-to-hapl-to-efg/output
 experiments/vcf-to-hapl-to-efg/chr22_uppercase.fasta
 experiments/vcf-to-hapl-to-efg/1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz
+experiments/vcf-to-hapl-to-efg/1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz.tbi
 
 tools/efg-locate/efg-locate
 tools/efg-locate/test/output-*
@@ -19,3 +20,6 @@ experiments/aligner-evaluation/chaining/output
 experiments/aligner-evaluation/final/output
 experiments/aligner-evaluation/mems/output
 experiments/aligner-evaluation/vg-comparison/output
+
+experiments/msa-validation/tmp*
+experiments/msa-validation/output_stats.txt
