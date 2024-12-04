@@ -9,16 +9,23 @@ chainx-block-graph : chainx-block-graph.cpp chainx-block-graph.hpp chaining.hpp 
 	chainx-block-graph.cpp command-line-parsing/cmdline.c \
 	-o chainx-block-graph
 
-command-line-parsing/cmdline%c command-line-parsing/cmdline%h : command-line-parsing/config.ggo
-	gengetopt \
-		--input=./command-line-parsing/config.ggo \
-		--output-dir=./command-line-parsing/ \
-		--unnamed-opts
+# uncomment for development
+#command-line-parsing/cmdline%c command-line-parsing/cmdline%h : command-line-parsing/config.ggo
+#	gengetopt \
+#		--input=./command-line-parsing/config.ggo \
+#		--output-dir=./command-line-parsing/ \
+#		--unnamed-opts
 
 test : chainx-block-graph test/test.sh
 	test/test.sh
 
-.PHONY : clean all test
+.PHONY : clean all test cleanall
 
+#clean :
+#	rm -Rf command-line-parsing/cmdline.c command-line-parsing/cmdline.h test/output*
+#cleanall :
+#	rm -Rf chainx-block-graph command-line-parsing/cmdline.c command-line-parsing/cmdline.h test/output*
 clean :
-	rm -Rf chainx-block-graph command-line-parsing/cmdline.{c,h} test/output*
+	rm -Rf test/output*
+cleanall :
+	rm -Rf chainx-block-graph test/output*
