@@ -158,21 +158,30 @@ if [[ "$argp" = true ]] ; then
 		-a $alignmentsout
 
 	if [[ "$argc" = true ]] ; then
-		awk -i inplace "{if ($discardoption) {print}}" "$alignmentsout"
+		echo -n "Filtering alignments with identity <= 90% or read coverage < 50%..."
+		awk "{if ($discardoption) {print}}" "$alignmentsout" > "$workingfolder/filtered_alignments_$$.gaf"
+		mv "$workingfolder/filtered_alignments_$$.gaf" "$alignmentsout"
+		echo " done."
 
-		grep -A 1 --no-group-separator \
-			-f <(grep -v \
+		unalignedreads=$({ grep -v \
 				-f <(cut -f1 $alignmentsout | uniq) \
-				<(awk 'NR % 4 == 1' $reads | cut -d' ' -f1 | tr -d "@")) \
-			<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
-			> "$workingfolder/$(basename reads)_unaligned_reads.fasta"
+				<(awk 'NR % 4 == 1' $reads | cut -d' ' -f1 | tr -d "@") || true; })
+		unalignedreadscount=$(echo -n "$unalignedreads" | wc -l)
+		if [[ "$unalignedreadscount" -gt "0" ]] ; then
+			grep -A 1 --no-group-separator \
+				-f <(echo "$unalignedreads") \
+				<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
+				> "$workingfolder/$(basename $reads)_unaligned_reads.fasta"
 
-		$graphaligner -x "vg" \
-			-t $threads \
-			-g $graph \
-			-f "$workingfolder/$(basename reads)_unaligned_reads.fasta" \
-			-a "$workingfolder/$(basename reads)_unaligned_reads.gaf"
-		cat "$workingfolder/$(basename reads)_unaligned_reads.gaf" >> $alignmentsout
+			$graphaligner -x "vg" \
+				-t $threads \
+				-g $graph \
+				-f "$workingfolder/$(basename $reads)_unaligned_reads.fasta" \
+				-a "$workingfolder/$(basename $reads)_unaligned_reads.gaf"
+			cat "$workingfolder/$(basename $reads)_unaligned_reads.gaf" >> $alignmentsout
+		else
+			echo "There are no unaligned reads to realign"
+		fi
 	fi
 else
 	# pipeline of above commands
@@ -216,16 +225,28 @@ else
 		-a $alignmentsout
 
 	if [[ "$argc" = true ]] ; then
-		awk -i inplace "{if ($discardoption) {print}}" "$alignmentsout"
+		echo -n "Filtering alignments with identity <= 90% or read coverage < 50%..."
+		awk "{if ($discardoption) {print}}" "$alignmentsout" > "$workingfolder/filtered_alignments_$$.gaf"
+		mv "$workingfolder/filtered_alignments_$$.gaf" "$alignmentsout"
+		echo " done."
 
-		grep -A 1 --no-group-separator \
-			-f <(grep -v \
+		unalignedreads=$({ grep -v \
 				-f <(cut -f1 $alignmentsout | uniq) \
-				<(awk 'NR % 4 == 1' $reads | cut -d' ' -f1 | tr -d "@")) \
-			<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
-			> $fastapipe
+				<(awk 'NR % 4 == 1' $reads | cut -d' ' -f1 | tr -d "@") || true; })
+		unalignedreadscount=$(echo -n "$unalignedreads" | wc -l)
+		if [[ "$unalignedreadscount" -gt "0" ]] ; then
+			echo "There are the following unaligned reads:"
+			echo "$unalignedreads"
+			grep -A 1 --no-group-separator \
+				-f <(echo "$unalignedreads") \
+				<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
+				> $fastapipe
+			wait $(jobs -p)
+		else
+			echo "There are no unaligned reads to realign"
+			set +eo pipefail ; { kill $(jobs -p) & } ; set -eo pipefail
+		fi
 
-		wait $(jobs -p)
 		cat "$workingfolder/unaligned_reads_$$.gaf" >> $alignmentsout
 		rm "$workingfolder/unaligned_reads_$$.gaf"
 	fi
