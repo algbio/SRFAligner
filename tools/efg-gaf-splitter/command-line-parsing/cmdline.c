@@ -25,13 +25,13 @@
 
 #include "cmdline.h"
 
-const char *gengetopt_args_info_purpose = "Program to split GAF matches into node matches that are valid GraphAligner\nseeds";
+const char *gengetopt_args_info_purpose = "Program to split GAF exact matches into node matches that are valid\nGraphAligner seeds and eventually flip to the reverse complement representation";
 
 const char *gengetopt_args_info_usage = "Usage: efg-gaf-splitter graph.gfa seeds.gaf";
 
 const char *gengetopt_args_info_versiontext = "";
 
-const char *gengetopt_args_info_description = "The program takes in input an Elastic Founder Graph (xGFA) and a set of GAF\nexact matches, and outputs in stdout the matches split into node matches,\nfiltering node matches of length 1.";
+const char *gengetopt_args_info_description = "The program takes in input a GFA graph and a set of GAF exact matches, and\noutputs in stdout the matches split into node matches, filtering node matches\nof length 1. If the query id in the GAF entries starts with prefix 'rev_', the\nmatch is considered to be between the reverse complement of the read and the\ngraph: such prefix is removed and the GAF entries in output are flipped to be\nbetween the forward strand of the read and the reverse complement nodes of the\ngraph.";
 
 const char *gengetopt_args_info_help[] = {
   "  -h, --help     Print help and exit",
