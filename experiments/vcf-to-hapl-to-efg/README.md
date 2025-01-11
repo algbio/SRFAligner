@@ -5,7 +5,7 @@ Pipeline to build an indexable Elastic Founder Graph from a VCF file plus refere
 ```
 This requires ~X of disk space and ~Y GB of RAM. If you want to generate an iEFG from fewer haplotypes, for example 20, run
 ```
-/usr/bin/time ./sample-and-build-efg-heuristic.sh -f chr22_uppercase.fasta -v 1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz -c chr22 -s 20 -M 41 -t 32
+/usr/bin/time ./sample-and-build-efg-heuristic.sh -f chr22_uppercase.fasta -v 1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz -c chr22 -s 20 -t 32
 ```
 
 ## Prerequisites

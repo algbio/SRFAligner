@@ -16,6 +16,8 @@ bcftools=bcftools
 # setup
 #
 threads=8
+heuristicsubset=""
+
 # parsing command line options
 print_help()
 {
@@ -56,7 +58,7 @@ while getopts "hf:v:c:r:s:M:t:" option; do
 			nhapl="$OPTARG" ;;
 		M) # heuristic subset
 			argM=true
-			heuristicsubset="$OPTARG" ;;
+			heuristicsubset="--heuristic-subset $OPTARG" ;;
 		t) # threads
 			argt=true
 			threads="$OPTARG" ;;
@@ -70,7 +72,7 @@ while getopts "hf:v:c:r:s:M:t:" option; do
 done
 shift $(expr $OPTIND - 1) # remove options from positional parameters
 
-if [ "$argf" = false ] || [ "$argc" = false ] || [ "$argv" = false ] || [ "$args" = false ] || [ "$argM" = false ]
+if [ "$argf" = false ] || [ "$argc" = false ] || [ "$argv" = false ] || [ "$args" = false ]
 then
 	print_help
 	exit
@@ -84,12 +86,23 @@ stats=$outputfolder/stats.txt
 cd $outputfolder
 
 #
+# randomness source
+#
+# https://www.gnu.org/software/coreutils/manual/html_node/Random-sources.html#Random-sources
+get_seeded_random()
+{
+  seed="$1"
+  openssl enc -aes-256-ctr -pass pass:"$seed" -nosalt \
+    </dev/zero 2>/dev/null
+}
+
+#
 # 1. sampling the vcf
 #
 echo -n "Sampling the vcf..."
 # TODO I am expecting the haplotypes to be after the 9th field specified by the VCF header, is this always correct?
 $bcftools query -l $vcf > haplotypes
-cat haplotypes | shuf -n $nhapl > sampled_haplotypes
+cat haplotypes | shuf -n $nhapl --random-source=<(get_seeded_random "semi-repeat-free") > sampled_haplotypes
 $bcftools view --samples-file sampled_haplotypes $vcf > sampled_haplotypes.vcf
 # FIX for the T2T 1KGP data and vcf2multialign, see https://github.com/tsnorri/vcf2multialign/issues/5
 sed -i 's/e+06//g' sampled_haplotypes.vcf
@@ -118,5 +131,5 @@ echo " done."
 # 3. MSA -> iEFG
 #
 echo -n "Building the indexable Elastic Founder Graph..."
-/usr/bin/time $founderblockgraph --elastic --gfa --ignore-chars="N" --output-paths --threads=$threads --input=sampled_haplotypes.a2m --output=efg-unsimplified.gfa --heuristic-subset $heuristicsubset >> $log 2>> $log
+/usr/bin/time $founderblockgraph --elastic --gfa --ignore-chars="N" --output-paths --threads=$threads --input=sampled_haplotypes.a2m --output=efg-unsimplified.gfa $heuristicsubset >> $log 2>> $log
 echo " done."
