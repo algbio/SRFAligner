@@ -17,6 +17,7 @@ efg-gaf-splitter : efg-gaf-splitter.cpp efg.hpp command-line-parsing/cmdline.h c
 
 .PHONY : clean all cleanall
 
+# uncomment for development
 #clean :
 #	rm -Rf command-line-parsing/cmdline.c command-line-parsing/cmdline.h
 #cleanall :

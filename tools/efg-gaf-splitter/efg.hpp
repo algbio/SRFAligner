@@ -188,7 +188,7 @@ class GAFAnchor {
 
 
 	public:
-		GAFAnchor(istringstream &descr, Elasticfoundergraph &efg)
+		GAFAnchor(istringstream &descr, Elasticfoundergraph const &efg)
 		{
 			// query info
 			descr >> qname >> qlength >> qstart >> qend;
@@ -316,13 +316,13 @@ class GAFAnchor {
 		{
 			qname = qname.substr(4);
 			int newqstart = qlength - qend;
-			int newqend = qlength - qstart + 1;
+			int newqend = qlength - qstart;
 
 			qstart = newqstart;
 			qend = newqend;
 
 			int newpstart = plength - pend;
-			int newpend = plength - pstart + 1;
+			int newpend = plength - pstart;
 
 			assert(newpstart >= 0);
 			pstart = newpstart;
@@ -511,7 +511,7 @@ void anchors_to_stream_split_single_graphaligner(std::ostream *out, const Elasti
 	}
 }
 
-vector<vector<GAFAnchor>> read_gaf(std::ifstream &anchorsstream, Elasticfoundergraph &efg)
+vector<vector<GAFAnchor>> read_gaf(std::ifstream &anchorsstream, Elasticfoundergraph const &efg)
 {
 	vector<GAFAnchor> unsorted_anchors;
 	// read file
@@ -542,6 +542,19 @@ vector<vector<GAFAnchor>> read_gaf(std::ifstream &anchorsstream, Elasticfounderg
 	}
 
 	return anchors;
+}
+
+bool read_gaf_single(std::ifstream &anchorsstream, Elasticfoundergraph const &efg, GAFAnchor &seed)
+{
+	string line;
+	while (std::getline(anchorsstream, line)) {
+		if (line == "")
+			continue;
+		istringstream linestream(line);
+		seed = GAFAnchor(linestream, efg);
+		return 1;
+	}
+	return 0; // file is consumed
 }
 
 #endif

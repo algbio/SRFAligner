@@ -37,20 +37,33 @@ int main(int argc, char* argv[])
 	Elasticfoundergraph graph(graphfs);
 	std::cerr << " done." << std::endl;
 
-	std::cerr << "Reading the seeds..." << std::flush;
-	vector<vector<GAFAnchor>> seeds = read_gaf(gaffs, graph);
-	std::cerr << " done." << std::endl;
+	if (argsinfo.sort_flag) {
+		std::cerr << "Reading the seeds..." << std::flush;
+		vector<vector<GAFAnchor>> seeds = read_gaf(gaffs, graph);
+		std::cerr << " done." << std::endl;
 
-	std::cerr << "Splitting the seeds..." << std::flush;
-	for (auto &patternseeds : seeds) {
-		for (auto &a : patternseeds) {
-			for (auto &b : a.split_single_graphaligner(graph)) {
+		std::cerr << "Splitting the seeds..." << std::flush;
+		for (auto &patternseeds : seeds) {
+			for (auto &a : patternseeds) {
+				for (auto &b : a.split_single_graphaligner(graph)) {
+					if (b.get_query_id().find("rev_") != std::string::npos) {
+						b.reverse();
+					}
+					std::cout << b.to_string(graph) << std::endl;
+				}
+			}
+		}
+		std::cerr << " done." << std::endl;
+	} else {
+		GAFAnchor seed;
+		while (read_gaf_single(gaffs, graph, seed)) {
+			for (auto &b : seed.split_single_graphaligner(graph)) {
 				if (b.get_query_id().find("rev_") != std::string::npos) {
 					b.reverse();
 				}
 				std::cout << b.to_string(graph) << std::endl;
 			}
+			std::cerr << " done." << std::endl;
 		}
 	}
-	std::cerr << " done." << std::endl;
 }
