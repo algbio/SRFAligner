@@ -1,2 +1,2 @@
-P	threenode1	0+,3+,6+	*
-P	threenode2	2+,4+,7+	*
+threenode1	5	0	5	+	>0>3>6	6	1	6	0	0	255
+threenode2	4	0	4	+	>2>4>7	6	2	6	0	0	255

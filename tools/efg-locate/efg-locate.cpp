@@ -15,7 +15,7 @@
 //#define LOCATE_DEBUG
 
 using namespace efg_locate;
-using std::string;
+using std::string, std::max;
 
 int main(int argc, char* argv[])
 {
@@ -40,8 +40,10 @@ int main(int argc, char* argv[])
 	params.renamereversecomplement = argsinfo.rename_reverse_complement_flag;
 	params.splitoutputmatches = argsinfo.split_output_matches_flag;
 	params.splitoutputmatchesgraphaligner = argsinfo.split_output_matches_graphaligner_flag;
+	params.splitkeepedgematches = argsinfo.split_keep_edge_matches_flag;
 	params.edgemincount = argsinfo.approximate_edge_match_min_count_arg;
-	params.edgemincountheuristic = argsinfo.approximate_edge_match_min_count_heuristic_flag; // default false
+	params.edgelongestcount = argsinfo.approximate_edge_match_longest_arg;
+	params.edgelongestcountmax = argsinfo.approximate_edge_match_longest_max_count_arg;
 
 	// open graph file
 	std::filesystem::path graphpath {argsinfo.inputs[0]};
@@ -83,7 +85,7 @@ int main(int argc, char* argv[])
 	std::atomic<bool> input_done = false;
 	std::thread inputworker;
 	vector<string> pattern_ids, patterns;
-	if (argsinfo.approximate_flag && params.threads > 0) {
+	if ((argsinfo.approximate_flag and params.threads > 0) or (!argsinfo.approximate_flag)) {
 		std::cerr << "Locate" << std::endl;
 		inputworker = std::thread(reader_worker, std::ref(params.patternsfs), std::ref(input_done));
 	} else {
@@ -100,40 +102,22 @@ int main(int argc, char* argv[])
 #endif
 
 	int returnvalue = 0;
-	if (!argsinfo.approximate_flag and argsinfo.ignore_chars_arg == NULL) {
-		if (params.reversecompl) {std::cerr << "Reverse complement not implemented in this mode!" << std::endl; exit(1);};
-		if (params.threads != -1) {std::cerr << "Multithreading not implemented in this mode!" << std::endl; exit(1);};
-		if (params.splitoutputmatches or params.splitoutputmatchesgraphaligner) {std::cerr << "Splitting of output matches not implemented in this mode!" << std::endl; exit(1);};
-
-		for (int p = 0; p < patterns.size(); p++) {
-			vector<int> path;
-
-			if (efg_backward_search(graph, patterns[p], path) != 0) {
-				path_to_stream(&params.outputfs, graph, pattern_ids[p], path);
-			} else {
-				cerr << "Pattern " << pattern_ids[p] << " does not occur!" << std::endl;
-				returnvalue = 1;
-			}
-		}
-		return returnvalue;
-	}
-
-	if (!argsinfo.approximate_flag and argsinfo.ignore_chars_arg != NULL) {
-		if (params.reversecompl) {std::cerr << "Reverse complement not implemented in this mode!"<<  std::endl; exit(1);};
-		if (params.threads != -1) {std::cerr << "Multithreading not implemented in this mode!" << std::endl; exit(1);};
-		if (params.splitoutputmatches or params.splitoutputmatchesgraphaligner) {std::cerr << "Splitting of output matches not implemented in this mode!" << std::endl; exit(1);};
-
-		for (int p = 0; p < patterns.size(); p++) {
-			vector<vector<int>> paths;
-
-			if (efg_backward_search_ignorechars(graph, params.ignorechars, patterns[p], paths) != 0) {
-				path_to_stream(&params.outputfs, graph, pattern_ids[p], paths);
-			} else {
-				cerr << "Pattern " << pattern_ids[p] << " does not occur!" << std::endl;
-				returnvalue = 1;
-			}
-		}
-		return returnvalue;
+	// exact pattern matching
+	if (!argsinfo.approximate_flag) {
+		std::atomic<bool> workers_done = false;
+		std::thread outputworker(writer_worker, std::ref(workers_done), std::ref(params));
+		vector<std::thread> workers;
+		for (int i = 0; i < max(1,params.threads); i++)
+			workers.push_back(std::thread(exact_worker, std::ref(graph), std::ref(pattern_ids), std::ref(patterns), std::ref(params), std::ref(input_done)));
+		for (int i = 0; i < workers.size(); i++)
+			workers[i].join();
+		workers_done = true;
+		inputworker.join();
+		outputworker.join();
+		// sanity check?
+		outputworker = std::thread(writer_worker, std::ref(workers_done), std::ref(params));
+		outputworker.join();
+		return 0;
 	}
 
 	if (argsinfo.approximate_flag) {
@@ -157,9 +141,9 @@ int main(int argc, char* argv[])
 
 				if (approx_efg_backward_search(graph, pattern_ids[p], patterns[p], params, matches) != 0) {
 					if (params.splitoutputmatches)
-						anchors_to_stream_split_single(&params.outputfs, graph, matches);
+						anchors_to_stream_split_single(&params.outputfs, graph, matches, params.splitkeepedgematches);
 					else if (params.splitoutputmatchesgraphaligner)
-						anchors_to_stream_split_single_graphaligner(&params.outputfs, graph, matches);
+						anchors_to_stream_split_single_graphaligner(&params.outputfs, graph, matches, params.splitkeepedgematches);
 					else
 						anchors_to_stream(&params.outputfs, graph, matches);
 				} else {

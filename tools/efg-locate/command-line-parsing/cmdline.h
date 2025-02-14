@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "0.0"
+#define CMDLINE_PARSER_VERSION "0.1"
 #endif
 
 /** @brief Where the command line options are stored */
@@ -48,8 +48,12 @@ struct gengetopt_args_info
   int approximate_edge_match_min_count_arg;	/**< @brief Consider any approximate occurrence valid if the pattern substring occurs at most COUNT times in the edges (default='0').  */
   char * approximate_edge_match_min_count_orig;	/**< @brief Consider any approximate occurrence valid if the pattern substring occurs at most COUNT times in the edges original value given at command line.  */
   const char *approximate_edge_match_min_count_help; /**< @brief Consider any approximate occurrence valid if the pattern substring occurs at most COUNT times in the edges help description.  */
-  int approximate_edge_match_min_count_heuristic_flag;	/**< @brief Together with the --approximate-edge-match-min-count option, compute the edge occurrences occurring at most COUNT times only after not finding any long match of some read substring in the graph spanning 3+ nodes (default=off).  */
-  const char *approximate_edge_match_min_count_heuristic_help; /**< @brief Together with the --approximate-edge-match-min-count option, compute the edge occurrences occurring at most COUNT times only after not finding any long match of some read substring in the graph spanning 3+ nodes help description.  */
+  int approximate_edge_match_longest_arg;	/**< @brief Consider the COUNT longest substrings of the pattern appearing in the edges valid (default='0').  */
+  char * approximate_edge_match_longest_orig;	/**< @brief Consider the COUNT longest substrings of the pattern appearing in the edges valid original value given at command line.  */
+  const char *approximate_edge_match_longest_help; /**< @brief Consider the COUNT longest substrings of the pattern appearing in the edges valid help description.  */
+  int approximate_edge_match_longest_max_count_arg;	/**< @brief Consider the COUNT longest substrings valid only if they appear less than N times in the edges (default='1000').  */
+  char * approximate_edge_match_longest_max_count_orig;	/**< @brief Consider the COUNT longest substrings valid only if they appear less than N times in the edges original value given at command line.  */
+  const char *approximate_edge_match_longest_max_count_help; /**< @brief Consider the COUNT longest substrings valid only if they appear less than N times in the edges help description.  */
   int approximate_min_coverage_arg;	/**< @brief Consider approximate occurrences as valid if they cover at least PERC % of the pattern (default='0').  */
   char * approximate_min_coverage_orig;	/**< @brief Consider approximate occurrences as valid if they cover at least PERC % of the pattern original value given at command line.  */
   const char *approximate_min_coverage_help; /**< @brief Consider approximate occurrences as valid if they cover at least PERC % of the pattern help description.  */
@@ -63,6 +67,8 @@ struct gengetopt_args_info
   const char *split_output_matches_help; /**< @brief In approximate mode (--approximate), split long matches into node matches help description.  */
   int split_output_matches_graphaligner_flag;	/**< @brief Same as --split-output-matches, but filter out node matches of length 1 (for use with GraphAligner --extend) (default=off).  */
   const char *split_output_matches_graphaligner_help; /**< @brief Same as --split-output-matches, but filter out node matches of length 1 (for use with GraphAligner --extend) help description.  */
+  int split_keep_edge_matches_flag;	/**< @brief In approximate mode and using option --split-output-matches or --split-output-matches-graphaligner, do not split edge matches (default=off).  */
+  const char *split_keep_edge_matches_help; /**< @brief In approximate mode and using option --split-output-matches or --split-output-matches-graphaligner, do not split edge matches help description.  */
   long threads_arg;	/**< @brief Number of compute threads (default='-1').  */
   char * threads_orig;	/**< @brief Number of compute threads original value given at command line.  */
   const char *threads_help; /**< @brief Number of compute threads help description.  */
@@ -75,13 +81,15 @@ struct gengetopt_args_info
   unsigned int ignore_chars_given ;	/**< @brief Whether ignore-chars was given.  */
   unsigned int approximate_given ;	/**< @brief Whether approximate was given.  */
   unsigned int approximate_edge_match_min_count_given ;	/**< @brief Whether approximate-edge-match-min-count was given.  */
-  unsigned int approximate_edge_match_min_count_heuristic_given ;	/**< @brief Whether approximate-edge-match-min-count-heuristic was given.  */
+  unsigned int approximate_edge_match_longest_given ;	/**< @brief Whether approximate-edge-match-longest was given.  */
+  unsigned int approximate_edge_match_longest_max_count_given ;	/**< @brief Whether approximate-edge-match-longest-max-count was given.  */
   unsigned int approximate_min_coverage_given ;	/**< @brief Whether approximate-min-coverage was given.  */
   unsigned int approximate_stats_given ;	/**< @brief Whether approximate-stats was given.  */
   unsigned int reverse_complement_given ;	/**< @brief Whether reverse-complement was given.  */
   unsigned int rename_reverse_complement_given ;	/**< @brief Whether rename-reverse-complement was given.  */
   unsigned int split_output_matches_given ;	/**< @brief Whether split-output-matches was given.  */
   unsigned int split_output_matches_graphaligner_given ;	/**< @brief Whether split-output-matches-graphaligner was given.  */
+  unsigned int split_keep_edge_matches_given ;	/**< @brief Whether split-keep-edge-matches was given.  */
   unsigned int threads_given ;	/**< @brief Whether threads was given.  */
   unsigned int overwrite_given ;	/**< @brief Whether overwrite was given.  */
 

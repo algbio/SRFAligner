@@ -19,8 +19,10 @@ struct Params {
 	bool renamereversecomplement;
 	bool splitoutputmatches;
 	bool splitoutputmatchesgraphaligner;
+	bool splitkeepedgematches;
 	int edgemincount;
-	bool edgemincountheuristic;
+	int edgelongestcount;
+	int edgelongestcountmax;
 };
 }
 

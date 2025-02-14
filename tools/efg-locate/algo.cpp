@@ -27,8 +27,17 @@ moodycamel::ConcurrentQueue<std::pair<std::string,std::string>> readqueue { 50, 
 
 namespace efg_locate {
 
-// TODO: find a better place for this
-char complement(char n)
+struct exactedgematch {
+	// compact description of substring Q[qstart..qend] (0-indexed) in graph edges
+	int qstart;
+	int qend;
+	// lex range [l..r] of efg index
+	size_type l;
+	size_type r;
+};
+
+// TODO: find a better place for these
+char complement(const char n)
 {
 	switch(n)
 	{   
@@ -42,10 +51,47 @@ char complement(char n)
 			return 'G';
 		case 'N':
 			return 'N';
-	}   
-	assert(false);
-	return ' ';
-}   
+	}
+	return 'N';
+}
+string reverse_complement(const string &s)
+{
+	string reverse_pattern(s.size(),0);
+	for (int i = 0; i < s.size(); i++)
+		reverse_pattern[i] = complement(s[s.size()-1-i]);
+	return reverse_pattern;
+}
+
+/*
+ * update a vector v of exactedgematch with a new element. Replace the element
+ * of v of shortest length with the new element, if the new element is a
+ * longer substring of the pattern. Size of v is not changed.
+ */
+void update_longest_match(vector<exactedgematch> &v, int qstart, int qend, size_type l, size_type r)
+{
+	assert(v.size() > 0);
+	int minpos = 0;
+	int minqstart = v[0].qstart;
+	int minqend = v[0].qend;
+
+	for (int i = 1; i < v.size(); i++) {
+		if (v[i].qend - v[i].qstart < minqend - minqstart) {
+			minpos = i;
+			minqstart = v[i].qstart;
+			minqend = v[i].qend;
+		}
+	}
+
+	if (qend - qstart > minqend - minqstart) {
+#ifdef ALGO_DEBUG
+		cerr << "DEBUG: substituting longest match Q[" << v[minpos].qstart << ".." << v[minpos].qend << "] ([" << v[minpos].l << ".." << v[minpos].r << " with longer match Q[" << qstart << ".." << qend << "] ([" << l << ".." << r << "\n";
+#endif
+		v[minpos].qstart = qstart;
+		v[minpos].qend = qend;
+		v[minpos].l = l;
+		v[minpos].r = r;
+	}
+}
 
 /*
  * find longest suffix pattern[f..q] of pattern[0..q] that is prefix of some
@@ -66,7 +112,7 @@ void inline first_search(
 	size_type &f_r,
 	const string &ignorechars = "")
 {
-	const sdsl::csa_wt<> &edge_index = efg.edge_index;
+	const csa_type &edge_index = efg.edge_index;
 	lastq_l = 0; // lex bounds in edge_index
 	lastq_r = edge_index.size() - 1;
 	size_type l_res, r_res; // temporary results
@@ -112,7 +158,7 @@ void inline first_search(
 	size_type &qq_r,
 	const string &ignorechars = "")
 {
-	const sdsl::csa_wt<> &edge_index = efg.edge_index;
+	const csa_type &edge_index = efg.edge_index;
 	lastq_l = 0; // lex bounds in edge_index
 	lastq_r = edge_index.size() - 1;
 	size_type l_res, r_res; // temporary results
@@ -173,7 +219,7 @@ void inline simple_search(
 	int &u_k,
 	const string &ignorechars = "")
 {
-	const sdsl::csa_wt<> &edge_index = efg.edge_index;
+	const csa_type &edge_index = efg.edge_index;
 	const int startq = q;
 
 	path.clear(); // path will be filled in backwards (thus reverse) order
@@ -280,7 +326,7 @@ int inline find_connecting_vertex(
 	vector<int> &path,
 	int &first_node_pos)
 {
-	const sdsl::csa_wt<> &edge_index = efg.edge_index;
+	const csa_type &edge_index = efg.edge_index;
 
 	std::unordered_set<int> middle_block;
 	std::unordered_map<int,int> middle_edges; // just one candidate last edge
@@ -365,113 +411,6 @@ int inline find_connecting_vertex(
 	return 0;
 }
 
-/*
- * Find ONE occurrence of pattern in iEFG efg. If successful, return value is
- * >0 and path contains the node indices of such path, otherwise return value is
- * 0 and path is empty.
- *
- * Prerequisites:
- * efg.init_pattern_matching_support() must have been called
- *
- * Note: 
- * The implementation follow a "simplified" version of the algorithms in
- * https://doi.org/10.1016/j.tcs.2023.114269 working in
- * O(|Q| + min(|Q|,L)^2 + H^2) time, where L is the maximum node label
- * length and H is the maximum block height of the graph. 
- */
-int efg_backward_search(Elasticfoundergraph &efg, const string &pattern, vector<int> &path)
-{
-	path.clear();
-	int q = pattern.size() - 1, f;
-	size_type lastq_l, lastq_r, f_l, f_r;
-
-	// find largest suffix pattern[f..q] of pattern[..q] that is prefix of some edge label l(u)l(v)
-	first_search(efg, pattern, q, lastq_l, lastq_r, f, f_l, f_r);
-
-	// case 1a: pattern occurs in some edge label l(u)l(v)
-	if (q == -1) {
-		// pick arbitrary occurrence
-		int startnode, endnode;
-		int position;
-		tie(startnode, endnode, position) = efg.locate_edge_and_position(lastq_l); 
-#ifdef ALGO_DEBUG
-		cerr << "DEBUG: occurrence found in edge " << efg.get_id(startnode) << "->" << efg.get_id(endnode) << endl;
-#endif
-
-		// trim first or last node
-		if (position < efg.get_label_length(startnode))
-			path.push_back(startnode);
-		if (position + pattern.length() >= efg.get_label_length(endnode))
-			path.push_back(endnode);
-
-		return 1;
-	}
-
-	// case 1b: pattern does not occur in some edge and f is not well-defined
-	if (f == -1)
-		return 0;
-
-#ifdef ALGO_DEBUG
-	cerr << "DEBUG: pattern[f..] is pattern[" << f << "..]" << endl;
-#endif
-
-	int first_node_pos, y, u_k;
-	q = f - 1;
-	simple_search(efg, pattern, q, path, first_node_pos, y, u_k);
-
-	// case 2a: no match of pattern[0..f-1] in efg ending at node boundary
-	if (q != -1)
-		return 0;
-
-#ifdef ALGO_DEBUG
-	cerr << "DEBUG: simple_search matched pattern[" << q+1 << ".." << f - 1 << "] and found nodes ";
-	for (auto n : path) {
-		cerr << efg.get_id(n) << ",";
-	}
-	cerr << ", first_node_pos is " << first_node_pos << ", y is " << y << "\n";
-#endif
-
-	if (find_connecting_vertex(efg, pattern, y, f, f_l, f_r, pattern.size()-1, path, first_node_pos) > 0) {
-		// case 3a: pattern occurs in efg
-		return 1;
-	} else {
-		// case 3b: no connecting vertex exists
-		return 0;
-	}
-}
-
-int efg_backward_search_ignorechars(Elasticfoundergraph &efg, const string &ignorechars, const string &pattern, vector<vector<int>> &paths)
-{
-	paths.clear();
-	int startq = 0;
-	for (int q = 0; q < pattern.size(); q++) {
-		if (ignorechars.find(pattern[q]) != std::string::npos) {
-			// search for current pattern without special characters, if any
-			if (startq < q - 1) {
-#ifdef ALGO_DEBUG
-				cerr << "searching for pattern substring " << pattern.substr(startq, q - startq) << endl;
-#endif
-				vector<int> partial_path;
-				if (efg_backward_search(efg, pattern.substr(startq, q - startq), partial_path) == 0)
-					return 0; // not found
-				paths.push_back(std::move(partial_path));
-			}
-			startq = q + 1;
-		}
-	}
-	if (startq < pattern.size()) {
-#ifdef ALGO_DEBUG
-		cerr << "searching for pattern substring " << pattern.substr(startq) << endl;
-#endif
-		vector<int> partial_path;
-		if (efg_backward_search(efg, pattern.substr(startq), partial_path) == 0)
-			return 0; // not found
-		paths.push_back(std::move(partial_path));
-	}
-
-	return 1;
-}
-
 void inline output_edge_count_matches(const Elasticfoundergraph &efg, const string &pattern, const string &pattern_id, const int qq, const int startq, const int qq_l, const int qq_r, vector<GAFAnchor> &match)
 {
 		// output all edge-count matches
@@ -493,10 +432,111 @@ void inline output_edge_count_matches(const Elasticfoundergraph &efg, const stri
 		}
 }
 
+
+/*
+ * Find ONE occurrence of pattern in iEFG efg. If successful, return value is
+ * >0 and matches contains at least one GAFAnchor match
+ *
+ * Prerequisites:
+ * efg.init_pattern_matching_support() must have been called
+ *
+ * Note: 
+ * The implementation follow a "simplified" version of the algorithms in
+ * https://doi.org/10.1016/j.tcs.2023.114269 working in
+ * O(|Q| + min(|Q|,L)^2 + H^2) time, where L is the maximum node label
+ * length and H is the maximum block height of the graph. 
+ */
+int efg_backward_search(const Elasticfoundergraph &efg, const string &pattern_id, const string &pattern, Params &params, vector<GAFAnchor> &matches, const string &ignorechars = "")
+{
+	matches.clear();
+	vector<int> path;
+	int q = pattern.size() - 1, f;
+	size_type lastq_l, lastq_r, f_l, f_r;
+
+	// find largest suffix pattern[f..q] of pattern[..q] that is prefix of some edge label l(u)l(v)
+	first_search(efg, pattern, q, lastq_l, lastq_r, f, f_l, f_r, ignorechars);
+
+	// case 1a: pattern occurs in some edge label l(u)l(v)
+	if (q == -1) {
+		// pick arbitrary occurrence
+		output_edge_count_matches(efg, pattern, pattern_id, 0, pattern.size()-1, lastq_l, lastq_r, matches);
+		return 1;
+	}
+
+	// case 1b: pattern does not occur in some edge and f is not well-defined
+	if (f == -1)
+		return 0;
+
+#ifdef ALGO_DEBUG
+	cerr << "DEBUG: pattern[f..] is pattern[" << f << "..]" << endl;
+#endif
+
+	int first_node_pos, y, u_k;
+	q = f - 1;
+	simple_search(efg, pattern, q, path, first_node_pos, y, u_k, ignorechars);
+
+	// case 2a: no match of pattern[0..f-1] in efg ending at node boundary
+	if (q != -1)
+		return 0;
+
+#ifdef ALGO_DEBUG
+	cerr << "DEBUG: simple_search matched pattern[" << q+1 << ".." << f - 1 << "] and found nodes ";
+	for (auto n : path) {
+		cerr << efg.get_id(n) << ",";
+	}
+	cerr << ", first_node_pos is " << first_node_pos << ", y is " << y << "\n";
+#endif
+
+	if (path.size() == 0) {
+		// case 3a: pattern occurs in efg spanning 3 nodes
+		if (find_connecting_vertex(efg, pattern, y, f, f_l, f_r, pattern.size()-1, path, first_node_pos) > 0) {
+			assert(first_node_pos >= 0);
+			int pathlength = 0;
+			for (int i : path)
+				pathlength += efg.get_label_length(i);
+			matches.push_back(GAFAnchor(
+						pattern_id,
+						pattern.size(),
+						0,
+						pattern.size(),
+						path,
+						pathlength,
+						first_node_pos,
+						first_node_pos + (pattern.size()-(q+1))));
+			//assert(match.back().check(efg, pattern));
+			return 1;
+		}
+	} else {
+		// case 3b: pattern occurs in efg spanning 3 nodes
+		int u_node_pos;
+		if (find_connecting_vertex(efg, pattern, y, f, f_l, f_r, pattern.size()-1, path, u_node_pos) > 0) {
+			assert(u_node_pos == 0);
+			assert(first_node_pos >= 0);
+			int pathlength = 0;
+			for (int i : path)
+				pathlength += efg.get_label_length(i);
+
+			matches.push_back(GAFAnchor(
+						pattern_id,
+						pattern.size(),
+						0,
+						pattern.size(),
+						path,
+						pathlength,
+						first_node_pos,
+						first_node_pos + (pattern.size()-(q+1))));
+			//assert(match.back().check(efg, pattern));
+			return 1;
+		}
+	}
+	// case 3c: no connecting vertex
+	return 0;
+}
+
 /*
  * copy of efg_backward_search that matches pattern[0..q] until failure, saves result in a GAFAnchor, and updates q such that pattern[0..q] is the rest of the pattern that was not matched
  */
-int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pattern_id, const string &pattern, const int edgemincount, int &q, vector<GAFAnchor> &match, const string &ignorechars = "")
+int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pattern_id, const string &pattern, const int edgemincount, const int edgelongestcount, int &q, vector<GAFAnchor> &match, vector<exactedgematch> &longest, const string &ignorechars = "")
 {
 	const int startq = q;
 	int f, qq;
@@ -507,18 +547,23 @@ int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pat
 
 	// case 1a: the whole pattern occurs in some edge label l(u)l(v)
 	if (q == -1) {
-		if (qq == -1) { // not a semi-repeat-free (probably) or edge-count match
+		if (qq == -1) { // prioritize edgemincount matches to avoid duplicates, TODO check
 			// policy 1: do nothing
 			// policy 2: f
 			//q = std::max(q, f - 1);
+			if (edgelongestcount > 0)
+				update_longest_match(longest, q+1, startq, lastq_l, lastq_r);
 			return 0;
+		} else {
+			output_edge_count_matches(efg, pattern, pattern_id, qq, startq, qq_l, qq_r, match);
+			// fake updating the longest match to avoid overlaps/duplicates
+			if (edgelongestcount > 0)
+				update_longest_match(longest, q+1, startq, 0, 0);
+			// policy 1: do nothing
+			// policy 2: f
+			//q = std::max(q, f - 1);
+			return 1;
 		}
-
-		output_edge_count_matches(efg, pattern, pattern_id, qq, startq, qq_l, qq_r, match);
-		// policy 1: do nothing
-		// policy 2: f
-		//q = std::max(q, f - 1);
-		return 1;
 	}
 
 	// case 1b: pattern does not occur in some edge and f is not well-defined
@@ -529,13 +574,19 @@ int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pat
 			// policy 1: do nothing
 			// policy 2: f, do nothing in this case
 			return 0;
+		} else {
+			//std::cerr << "case 1b and after is " << q;
+			output_edge_count_matches(efg, pattern, pattern_id, qq, startq, qq_l, qq_r, match);
+			// fake updating the longest match to avoid overlaps/duplicates
+			if (edgelongestcount > 0)
+				update_longest_match(longest, q+1, startq, 0, 0);
+			// policy 1: do nothing
+			// policy 2: f, do nothing in this case
+			return 1;
 		}
-		//std::cerr << "case 1b and after is " << q;
-		output_edge_count_matches(efg, pattern, pattern_id, qq, startq, qq_l, qq_r, match);
-		// policy 1: do nothing
-		// policy 2: f, do nothing in this case
-		return 1;
 	}
+
+	const int first_search_q = q;
 
 	int first_node_pos, y, u_k;
 	vector<int> path;
@@ -548,15 +599,20 @@ int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pat
 			// policy 1: do nothing
 			// policy 2: f
 			//q = std::max(q, f - 1);
+			if (edgelongestcount > 0)
+				update_longest_match(longest, first_search_q+1, startq, lastq_l, lastq_r);
 			return 0;
+		} else {
+			output_edge_count_matches(efg, pattern, pattern_id, qq, startq, qq_l, qq_r, match);
+			// fake updating the longest match to avoid overlaps/duplicates
+			if (edgelongestcount > 0)
+				update_longest_match(longest, q+1, startq, 0, 0);
+			// policy 1: we consumed pattern[qq..]
+			q = std::min(q, qq);
+			// policy 2: f
+			//q = std::max(q, f - 1);
+			return 1;
 		}
-
-		output_edge_count_matches(efg, pattern, pattern_id, qq, startq, qq_l, qq_r, match);
-		// policy 1: we consumed pattern[qq..]
-		q = std::min(q, qq);
-		// policy 2: f
-		//q = std::max(q, f - 1);
-		return 1;
 	}
 
 #ifdef ALGO_DEBUG
@@ -630,15 +686,20 @@ int efg_backward_search_greedy(const Elasticfoundergraph &efg, const string &pat
 		// policy 1: do nothing
 		// policy 2: f
 		//q = std::max(q, f - 1);
+		if (edgelongestcount > 0)
+			update_longest_match(longest, first_search_q+1, startq, lastq_l, lastq_r);
 		return 0;
+	} else {
+		output_edge_count_matches(efg, pattern, pattern_id, qq, startq, qq_l, qq_r, match);
+		// fake updating the longest match to avoid overlaps/duplicates
+		if (edgelongestcount > 0)
+			update_longest_match(longest, q+1, startq, 0, 0);
+		// policy 1: we consumed pattern[qq..]
+		q = std::min(q, qq);
+		// policy 2: f
+		//q = std::max(q, f - 1);
+		return 1;
 	}
-
-	output_edge_count_matches(efg, pattern, pattern_id, qq, startq, qq_l, qq_r, match);
-	// policy 1: we consumed pattern[qq..]
-	q = std::min(q, qq);
-	// policy 2: f
-	//q = std::max(q, f - 1);
-	return 1;
 }
 
 int approx_efg_backward_search(const Elasticfoundergraph &efg, const string &pattern_id, const string &pattern, Params &params, vector<GAFAnchor> &matches)
@@ -649,6 +710,11 @@ int approx_efg_backward_search(const Elasticfoundergraph &efg, const string &pat
 #ifdef ALGO_DEBUG
 	cerr << "Searching pattern " << pattern << endl;
 #endif
+	vector<exactedgematch> longest_matches;
+	longest_matches.reserve(params.edgelongestcount+1);
+	for (int i = 0; i < params.edgelongestcount; i++)
+		longest_matches.push_back(exactedgematch({0, 0, 0, 0}));
+
 	matches.clear();
 	int q = pattern.size() - 1;
 	while (q >= 0) {
@@ -662,7 +728,7 @@ int approx_efg_backward_search(const Elasticfoundergraph &efg, const string &pat
 #ifdef ALGO_DEBUG
 		cerr << "q before greedy search is " << q << endl;
 #endif
-		int res = efg_backward_search_greedy(efg, pattern_id, pattern, ((params.edgemincountheuristic) ? 1 : params.edgemincount), q, match, params.ignorechars);
+		int res = efg_backward_search_greedy(efg, pattern_id, pattern, params.edgemincount, params.edgelongestcount, q, match, longest_matches, params.ignorechars);
 #ifdef ALGO_DEBUG
 		cerr << "q after greedy search is " << q << endl;
 #endif
@@ -672,8 +738,19 @@ int approx_efg_backward_search(const Elasticfoundergraph &efg, const string &pat
 				matches.push_back(m);
 		}
 	}
+	if (params.edgelongestcount > 0) {
+		for (exactedgematch &m : longest_matches) {
+			if ((m.l != 0 or m.r != 0) and (m.r - m.l <= params.edgelongestcountmax)) {
+				coverage += m.qend - m.qstart + 1;
+				output_edge_count_matches(efg, pattern, pattern_id, m.qstart, m.qend, m.l, m.r, matches);
+			}
+		}
+	}
 
 	vector<GAFAnchor> reversecompl_matches;
+	assert(longest_matches.size() == params.edgelongestcount);
+	for (int i = 0; i < params.edgelongestcount; i++)
+		longest_matches[i] = exactedgematch({0, 0, 0, 0});
 	if (params.reversecompl) {
 		string reverse_pattern(pattern.size(),0);
 		const string pattern_id_rev = ((params.renamereversecomplement) ? "rev_" + pattern_id : pattern_id);
@@ -690,13 +767,27 @@ int approx_efg_backward_search(const Elasticfoundergraph &efg, const string &pat
 				break;
 			int startq = q;
 			vector<GAFAnchor> match;
-			int res = efg_backward_search_greedy(efg, pattern_id_rev, reverse_pattern, ((params.edgemincountheuristic) ? 1 : params.edgemincount), q, match, params.ignorechars);
+			int res = efg_backward_search_greedy(efg, pattern_id_rev, reverse_pattern, params.edgemincount, params.edgelongestcount, q, match, longest_matches, params.ignorechars);
 			if (res > 0) {
 				rev_coverage += startq - q;
 				for (auto &m : match) {
 					if (!params.renamereversecomplement)
 						m.reverse();
 					reversecompl_matches.push_back(m);
+				}
+			}
+		}
+		if (params.edgelongestcount > 0) {
+			for (exactedgematch &m : longest_matches) {
+				if ((m.l != 0 or m.r != 0) and (m.r - m.l <= params.edgelongestcountmax)) {
+					vector<GAFAnchor> match;
+					output_edge_count_matches(efg, reverse_pattern, pattern_id_rev, m.qstart, m.qend, m.l, m.r, match);
+					rev_coverage += m.qend - m.qstart + 1;
+					for (auto &m : match) {
+						if (!params.renamereversecomplement)
+							m.reverse();
+						reversecompl_matches.push_back(m);
+					}
 				}
 			}
 		}
@@ -712,6 +803,7 @@ int approx_efg_backward_search(const Elasticfoundergraph &efg, const string &pat
 		std::osyncstream oss(std::cout);
 		oss << pattern_id << "\t"; // pattern name
 		oss << pattern.size() << "\t"; // length
+		oss << matches.size() << "\t"; // number of matches
 		oss << ((long)coverage*100)/pattern.size() << "\t"; // coverage %
 		oss << ((long)rev_coverage*100)/pattern.size() << "\t"; // reverse coverage %
 		oss << full_node_matches << "\t"; // lower bound on full node matches
@@ -732,42 +824,6 @@ int approx_efg_backward_search(const Elasticfoundergraph &efg, const string &pat
 	matches.insert(matches.end(), reversecompl_matches.begin(), reversecompl_matches.end());
 
 	reversecompl_matches.clear();
-	if (params.edgemincountheuristic and full_node_matches == 0 and rev_full_node_matches == 0) {
-#ifdef ALGO_DEBUG
-		cerr << "Did not find long matches, actually computing edge matches with min count equal to " << params.edgemincount << endl;
-#endif
-		q = pattern.size() - 1;
-		while (q >= 0) {
-			int startq = q;
-			vector<GAFAnchor> match;
-			int res = efg_backward_search_greedy(efg, pattern_id, pattern, params.edgemincount, q, match);
-			if (res > 0) {
-				for (auto &m : match)
-					matches.push_back(m);
-			}
-		}
-		if (params.reversecompl) {
-			string reverse_pattern(pattern.size(),0);
-			const string pattern_id_rev = ((params.renamereversecomplement) ? "rev_" + pattern_id : pattern_id);
-			for (int i = 0; i < pattern.size(); i++)
-				reverse_pattern[i] = complement(pattern[pattern.size()-1-i]);
-			q = pattern.size() - 1;
-			while (q >= 0) {
-				int startq = q;
-				vector<GAFAnchor> match;
-				int res = efg_backward_search_greedy(efg, pattern_id_rev, reverse_pattern, params.edgemincount, q, match);
-				if (res > 0) {
-					rev_coverage += startq - q;
-					for (auto &m : match) {
-						if (!params.renamereversecomplement)
-							m.reverse();
-						reversecompl_matches.push_back(m);
-					}
-				}
-			}
-		}
-		matches.insert(matches.end(), reversecompl_matches.begin(), reversecompl_matches.end());
-	}
 
 	return 1;
 }
@@ -846,6 +902,59 @@ void writer_worker(std::atomic<bool>& done, Params &params)
 	}
 }
 
+void exact_worker(const Elasticfoundergraph &graph, const vector<string> &pattern_ids, const vector<string> &patterns, Params &params, std::atomic<bool> &input_done)
+{
+	std::osyncstream oss(cerr);
+	int currentp;
+	vector<GAFAnchor> matches;
+	while (true) {
+		std::pair<std::string, std::string> p;
+		while (readqueue.try_dequeue(p)) {
+			bool occurs = false;
+			const string pattern_id_rev = ((params.reversecompl) ? (params.renamereversecomplement ? "rev_" + p.first : p.first) : "");
+			if (efg_backward_search(graph, p.first, p.second, params, matches) != 0) {
+				occurs = true;
+				std::stringstream localoutput;
+				if (params.splitoutputmatches) {
+					anchors_to_stream_split_single(&localoutput, graph, matches, params.splitkeepedgematches);
+				} else if (params.splitoutputmatchesgraphaligner) {
+					anchors_to_stream_split_single_graphaligner(&localoutput, graph, matches, params.splitkeepedgematches);
+				} else {
+					anchors_to_stream(&localoutput, graph, matches);
+				}
+				std::string *s = new std::string(localoutput.str());
+				while (!outputqueue.try_enqueue(s))
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
+			if (params.reversecompl and efg_backward_search(graph, pattern_id_rev, reverse_complement(p.second), params, matches) != 0) {
+				occurs = true;
+				std::stringstream localoutput;
+				if (!params.renamereversecomplement) {
+					for (auto &m : matches)
+						m.reverse();
+				}
+				if (params.splitoutputmatches) {
+					// TODO check reverse compl policy
+					anchors_to_stream_split_single(&localoutput, graph, matches, params.splitkeepedgematches);
+				} else if (params.splitoutputmatchesgraphaligner) {
+					anchors_to_stream_split_single_graphaligner(&localoutput, graph, matches, params.splitkeepedgematches);
+				} else {
+					anchors_to_stream(&localoutput, graph, matches);
+				}
+				std::string *s = new std::string(localoutput.str());
+				while (!outputqueue.try_enqueue(s))
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
+			//if (!occurs)
+			//	oss << "Cannot find any exact match of " << p.first << ((params.reversecompl) ? " or its reverse complement" : "") << "\n";
+		}
+		if (input_done)
+			break;
+		else
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+}
+
 void approx_worker(const Elasticfoundergraph &graph, const vector<string> &pattern_ids, const vector<string> &patterns, Params &params, std::atomic<bool> &input_done)
 {
 	std::osyncstream oss(cerr);
@@ -854,31 +963,19 @@ void approx_worker(const Elasticfoundergraph &graph, const vector<string> &patte
 	while (true) {
 		std::pair<std::string, std::string> p;
 		while (readqueue.try_dequeue(p)) {
-			/*{
-			  std::scoped_lock lck {mutp};
-			  if (p == patterns.size())
-			  return;
-
-			  currentp = p++;
-			  }*/
-
 			if (approx_efg_backward_search(graph, p.first, p.second, params, matches) != 0) {
-				//std::scoped_lock lck {mutoutput};
 				std::stringstream localoutput;
-				if (params.splitoutputmatches)
-					//anchors_to_stream_split_single(&params.outputfs, graph, matches);
-					anchors_to_stream_split_single(&localoutput, graph, matches);
-				else if (params.splitoutputmatchesgraphaligner)
-					//anchors_to_stream_split_single_graphaligner(&params.outputfs, graph, matches);
-					anchors_to_stream_split_single_graphaligner(&localoutput, graph, matches);
-				else
-					//anchors_to_stream(&params.outputfs, graph, matches);
+				if (params.splitoutputmatches) {
+					anchors_to_stream_split_single(&localoutput, graph, matches, params.splitkeepedgematches);
+				} else if (params.splitoutputmatchesgraphaligner) {
+					anchors_to_stream_split_single_graphaligner(&localoutput, graph, matches, params.splitkeepedgematches);
+				} else {
 					anchors_to_stream(&localoutput, graph, matches);
+				}
 				std::string *s = new std::string(localoutput.str());
 				while (!outputqueue.try_enqueue(s))
 					std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			} else {
-				//std::scoped_lock lck {mutcerr};
 				oss << "Cannot find any semi-repeat-free match of " << p.first << "\n";
 			}
 		}

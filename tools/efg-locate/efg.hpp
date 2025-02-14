@@ -12,14 +12,17 @@
 #include <cassert>
 #include <iterator>
 #include <unordered_map>
-#include <utility>
+#include <utility> // std::tie, <
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/csa_wt.hpp>
 #include <sdsl/suffix_arrays.hpp>
 #include <sdsl/util.hpp> // init_support for rank queries
-#include <utility> // std::tie, <
+#include <sdsl/config.hpp> // util things
 
 #include "efg-locate.hpp" // input parameters (Param)
+
+using namespace sdsl;
+typedef sdsl::csa_wt<wt_hutu<>, 16, 64, text_order_sa_sampling<>, isa_sampling<>, succinct_byte_alphabet<>> csa_type;
 
 //#define EFG_HPP_DEBUG
 
@@ -53,8 +56,8 @@ class Elasticfoundergraph {
 		//vector<vector<bool>> orientations; // true for +, false for -
 
 		// following data structures can be empty
-		vector<bool> is_source;
-		sdsl::csa_wt<> edge_index;
+		bit_vector is_source;
+		csa_type edge_index;
 		bit_vector node_leaders, edge_leaders;
 		sdsl::rank_support_v5<> node_leaders_rank_support, edge_leaders_rank_support;
 		sdsl::select_support_mcl<> node_leaders_select_support, edge_leaders_select_support;
@@ -173,8 +176,8 @@ class Elasticfoundergraph {
 
 		void init_pattern_matching_support()
 		{
-			vector<bool> is_source(ordered_node_ids.size() + 1, true);
-			vector<bool> is_sink(ordered_node_ids.size() + 1, true);
+			is_source = bit_vector(ordered_node_ids.size() + 1, true);
+			bit_vector is_sink(ordered_node_ids.size() + 1, true);
 
 			for (int i = 0; i < ordered_node_ids.size(); i++) {
 				for (int j : edges[i]) {
@@ -266,7 +269,6 @@ class Elasticfoundergraph {
 #endif
 
 			sdsl::construct_im(edge_index, edge_concat, 1);
-			std::swap(this->is_source, is_source);
 
 #ifdef EFG_HPP_DEBUG
 			cerr << "DEBUG: compressed suffix array is " << std::endl;
@@ -274,6 +276,46 @@ class Elasticfoundergraph {
 			cerr << " i SA ISA PSI LF BWT   T[SA[i]..SA[i]-1]" << std::endl;
 			csXprintf(cerr, "%2I %2S %3s %3P %2p %3B   %:1T", edge_index);
 #endif
+		}
+
+		// stub for storing and loading index, TODO check
+		void store_pattern_matching_support(const string &basename)
+		{
+			cerr << "Storing indexes...";
+			sdsl::store_to_file(is_source, basename + ".is_source");
+			sdsl::store_to_file(edge_index, basename + ".edge_index");
+			sdsl::store_to_file(node_leaders, basename + ".node_leaders");
+			sdsl::store_to_file(edge_leaders, basename + ".edge_leaders");
+			sdsl::store_to_file(node_leaders_rank_support,   basename + ".node_leaders_rank_support");
+			sdsl::store_to_file(node_leaders_select_support, basename + ".node_leaders_select_support");
+			sdsl::store_to_file(edge_leaders_rank_support, basename + ".edge_leaders_rank_support");
+			sdsl::store_to_file(edge_leaders_select_support, basename + ".edge_leaders_select_support");
+			cerr << " done.\n";
+		}
+
+		void load_pattern_matching_support(const string &basename)
+		{
+			if (std::filesystem::exists(std::filesystem::path({ basename + ".edge_index" }))) {
+				cerr << "Loading stored indexes...";
+				sdsl::load_from_file(is_source, basename + ".is_source");
+				sdsl::load_from_file(edge_index, basename + ".edge_index");
+				sdsl::load_from_file(node_leaders, basename + ".node_leaders");
+				sdsl::load_from_file(edge_leaders, basename + ".edge_leaders");
+				sdsl::load_from_file(node_leaders_rank_support, basename + ".node_leaders_rank_support");
+				sdsl::util::init_support(node_leaders_rank_support, &node_leaders);
+				sdsl::load_from_file(node_leaders_select_support, basename + ".node_leaders_select_support");
+				sdsl::util::init_support(node_leaders_select_support, &node_leaders);
+				sdsl::load_from_file(edge_leaders_rank_support, basename + ".edge_leaders_rank_support");
+				sdsl::util::init_support(edge_leaders_rank_support, &edge_leaders);
+				sdsl::load_from_file(edge_leaders_select_support, basename + ".edge_leaders_select_support");
+				sdsl::util::init_support(edge_leaders_select_support, &edge_leaders);
+				cerr << " done.\n";
+			} else {
+				cerr << "Indexes not found, computing...";
+				init_pattern_matching_support();
+				cerr << " done.\n";
+				store_pattern_matching_support(basename);
+			}
 		}
 
 		std::pair<int,int> locate_edge(size_type lex_rank) const
@@ -547,13 +589,13 @@ class GAFAnchor {
 		void reverse()
 		{
 			int newqstart = qlength - qend;
-			int newqend = qlength - qstart + 1;
+			int newqend = qlength - qstart;
 
 			qstart = newqstart;
 			qend = newqend;
 
 			int newpstart = plength - pend;
-			int newpend = plength - pstart + 1;
+			int newpend = plength - pstart;
 
 			assert(newpstart >= 0);
 			pstart = newpstart;
@@ -725,7 +767,7 @@ void anchors_to_stream(std::ostream *out, const Elasticfoundergraph &graph, vect
 	}
 }
 
-void anchors_to_stream_split_single(std::ostream *out, const Elasticfoundergraph &graph, const vector<GAFAnchor> &matches)
+void anchors_to_stream_split_single(std::ostream *out, const Elasticfoundergraph &graph, const vector<GAFAnchor> &matches, const bool keepedgematches)
 {
 	// matches can be their rev_ version
 	vector<GAFAnchor> buffer;
@@ -734,8 +776,12 @@ void anchors_to_stream_split_single(std::ostream *out, const Elasticfoundergraph
 	for (long i = 0; i < matches.size(); i++) {
 		if (matches[i].get_query_start() == currentqstart and
 				currentreverse == (matches[i].get_query_id().substr(0,4) == "rev_")) {
-			for (GAFAnchor n : matches[i].split_single(graph))
-				buffer.push_back(std::move(n));
+			if (keepedgematches and matches[i].get_path_length() <= 2) {
+				buffer.push_back(matches[i]);
+			} else {
+				for (GAFAnchor n : matches[i].split_single(graph))
+					buffer.push_back(std::move(n));
+			}
 		} else {
 			std::sort(buffer.begin(), buffer.end());
 			for (int n = 0; n < (int)buffer.size() - 1; n++) {
@@ -748,25 +794,33 @@ void anchors_to_stream_split_single(std::ostream *out, const Elasticfoundergraph
 
 			currentqstart = matches[i].get_query_start();
 			currentreverse = (matches[i].get_query_id().substr(0,4) == "rev_");
-			for (GAFAnchor n : matches[i].split_single(graph))
-				buffer.push_back(std::move(n));
+			if (keepedgematches and matches[i].get_path_length() <= 2) {
+				buffer.push_back(matches[i]);
+			} else {
+				for (GAFAnchor n : matches[i].split_single(graph))
+					buffer.push_back(std::move(n));
+			}
 		}
 	}
 	std::sort(buffer.begin(), buffer.end());
 	for (int n = 0; n < (int)buffer.size() - 1; n++) {
 		if (buffer[n] != buffer[n+1])
-			*out << buffer[n].to_string(graph) << std::endl;
+			*out << buffer[n].to_string(graph) << "\n";
 	}
 	if (buffer.size() > 0)
-		*out << buffer.back().to_string(graph) << std::endl;
+		*out << buffer.back().to_string(graph) << "\n";
 }
 
-void anchors_to_stream_split_single_graphaligner(std::ostream *out, const Elasticfoundergraph &graph, vector<GAFAnchor> &matches)
+void anchors_to_stream_split_single_graphaligner(std::ostream *out, const Elasticfoundergraph &graph, vector<GAFAnchor> const &matches, const bool keepedgematches)
 {
 	// TODO: remove duplicate anchors?
 	for (GAFAnchor m : matches) {
-		for (GAFAnchor n : m.split_single_graphaligner(graph)) {
-			*out << n.to_string(graph) << std::endl;
+		if (keepedgematches and m.get_path_length() <= 2) {
+			*out << m.to_string(graph) << "\n";
+		} else {
+			for (GAFAnchor n : m.split_single_graphaligner(graph)) {
+				*out << n.to_string(graph) << "\n";
+			}
 		}
 	}
 }

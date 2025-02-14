@@ -1,19 +1,21 @@
-version	"0.0"
+version	"0.1"
 package	"efg-locate"
 purpose	"Program to perform exact and approximate pattern matching on indexable Elastic Founder Graphs."
-usage	"efg-locate graph.gfa patterns.fasta {paths.gfa,seeds.gaf}"
+usage	"efg-locate graph.gfa patterns.fasta {paths.gaf,seeds.gaf}"
 
 description	"The program takes in input an indexable Elastic Founder Graph (xGFA) and a set of patterns in FASTA format. In normal mode, the program searches for an exact occurrence of the patterns in the graph, the output is in GFA path format, and the exit value is 0 if all patterns occur and 1 otherwise. In approximate mode (--approximate), the program greedily searches for semi-repeat-free seeds between the patterns and the graph, and the output is in GAF format."
 
 option	"ignore-chars"	-	"Ignore these characters for the indexability property/pattern matching, breaking up each pattern into maximal strings of non-ignore characters"	string	optional
 option	"approximate"	-	"Approximate pattern matching by greedily matching the pattern in the graph and starting over when the matching fails; output only the recognized matches spanning at least a full node"	flag	off
 option	"approximate-edge-match-min-count"	-	"Consider any approximate occurrence valid if the pattern substring occurs at most COUNT times in the edges"	int	typestr = "COUNT"	default = "0"	optional
-option	"approximate-edge-match-min-count-heuristic"	-	"Together with the --approximate-edge-match-min-count option, compute the edge occurrences occurring at most COUNT times only after not finding any long match of some read substring in the graph spanning 3+ nodes"	flag	off	hidden
+option	"approximate-edge-match-longest"	-	"Consider the COUNT longest substrings of the pattern appearing in the edges valid"	int	typestr = "COUNT"	default = "0"	optional
+option	"approximate-edge-match-longest-max-count"	-	"Consider the COUNT longest substrings valid only if they appear less than N times in the edges"	int	typestr = "COUNT"	default = "1000"	optional
 option	"approximate-min-coverage"	-	"Consider approximate occurrences as valid if they cover at least PERC % of the pattern"	int	typestr = "PERC"	default = "0"	optional	hidden
 option	"approximate-stats"	-	"Output statistics for each read in stdout"	flag	off
 option	"reverse-complement"	-	"Match also the reverse complement of the patterns and output the results as a reverse graph path"	flag	off
 option	"rename-reverse-complement"	-	"When matching the reverse complement of patterns, consider them as a distinct patterns by prepending 'rev_' to its name"	flag	off
 option	"split-output-matches"	-	"In approximate mode (--approximate), split long matches into node matches"	flag off
 option	"split-output-matches-graphaligner"	-	"Same as --split-output-matches, but filter out node matches of length 1 (for use with GraphAligner --extend)"	flag off
+option	"split-keep-edge-matches"	-	"In approximate mode and using option --split-output-matches or --split-output-matches-graphaligner, do not split edge matches"	flag	off
 option	"threads"		t	"Number of compute threads"		long	typestr = "THREADNUM"	default = "-1"	optional
 option	"overwrite"	-	"Overwrite the output file, if it exists"	flag	off
