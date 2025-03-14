@@ -13,6 +13,7 @@
 #include <iterator>
 #include <unordered_map>
 #include <utility>
+#include <algorithm>
 
 //#define EFG_HPP_DEBUG
 
