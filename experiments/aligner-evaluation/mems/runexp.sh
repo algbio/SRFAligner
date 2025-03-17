@@ -38,7 +38,6 @@ python3 ../scripts/generate_sim_reads.py \
 $usrbintime $srfaligner \
 	-t $threads \
 	-g $inputgraph \
-	-m 0 \
 	-i "N" \
 	-f output/sim_reads.fastq \
 	-a output/semi_repeat_free_alignments.gaf \

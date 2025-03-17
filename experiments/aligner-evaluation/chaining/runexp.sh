@@ -40,19 +40,18 @@ ln -s $thisfolder/../semi-repeat-free/output/sim_reads_path.nodes output
 $usrbintime $srfchainer \
 	-t $threads \
 	-g $inputgraph \
-	-m 0 \
 	-f output/sim_reads.fastq \
 	-a output/semi_repeat_free_chain_alignments.gaf \
 	2>> output/runexp_log.txt >> output/runexp_log.txt
 
-for m in 1 2 3 4 5 6 7 8 9 10
+for o in 1 5 10 50 100
 do
 	$usrbintime $srfchainer \
 		-t $threads \
 		-g $inputgraph \
-		-m $m \
+		-o $o \
 		-f output/sim_reads.fastq \
-		-a output/srf_edge_${m}_chain_alignments.gaf \
+		-a output/srf_edge_longest_${o}_chain_alignments.gaf \
 		2>> output/runexp_log.txt >> output/runexp_log.txt
 done
 
@@ -65,13 +64,13 @@ do
 	          {found[$1]="1"; print}}' \
 		output/$alignment > output/best_$alignment
 done
-for m in 1 2 3 4 5 6 7 8 9 10
+for o in 1 5 10 50 100
 do
 	awk '{if (found[$1] == "1") \
 	          {} \
 	      else
 	          {found[$1]="1"; print}}' \
-		output/srf_edge_${m}_chain_alignments.gaf > output/best_srf_edge_${m}_chain_alignments.gaf
+		output/srf_edge_longest_${o}_chain_alignments.gaf > output/best_srf_edge_longest_${o}_chain_alignments.gaf
 done
 
 # 4. validate and plot results
@@ -86,7 +85,7 @@ do
 		--alignments output/best_${alignment}_alignments.gaf \
 		--metrics output/metrics_${alignment}.mts
 done
-for m in 1 2 3 4 5 6 7 8 9 10
+for o in 1 5 10 50 100
 do
 	python3 ../scripts/compute_summary.py \
 		-t 3 \
@@ -94,8 +93,8 @@ do
 		--fastq output/sim_reads.fastq \
 		--path output/sim_reads_path.nodes \
 		--fasta output/sim_reads_path.fasta \
-		--alignments output/best_srf_edge_${m}_chain_alignments.gaf \
-		--metrics output/metrics_srf_edge_${m}_chain.mts
+		--alignments output/best_srf_edge_longest_${o}_chain_alignments.gaf \
+		--metrics output/metrics_srf_edge_longest_${o}_chain.mts
 done
 wait $(jobs -p)
 

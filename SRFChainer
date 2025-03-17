@@ -12,6 +12,7 @@ chainxblockgraph=$thisfolder/tools/ChainX-block-graph/chainx-block-graph
 workingfolder="."
 threads=8 # threads
 edgemincount=0 # semi-repeat-free seeds only
+edgelongestcount=0
 alternativechains=0
 chainingguess="--initial-guess-coverage=0.5 --ramp-up-factor=1.5"
 extendoptions="--max-cluster-extend 5 -b 10" # GraphAligner default extend options
@@ -34,7 +35,8 @@ print_help()
    echo "	-c : discard bad alignments (identity <= 0.9 or read coverage < 50%) and run GraphAligner on unaligned reads"
    echo "	-p : disable pipeline mode and save the seeds in working folder"
    echo "	-e : make GraphAligner consider each single seed (cluster) for extension"
-   echo "	-m edgemincount: heuristic parameter for seed computation (see efg-locate)"
+   echo "	-m edgemincount:     heuristic parameter for seed computation (see efg-locate)"
+   echo "	-o edgelongestcount: heuristic parameter for seed computation (see efg-locate)"
    echo "	-n altchains : heuristic parameter to chain an additional n times for each strand"
    echo "	-w path: working folder for output and temporary files"
 }
@@ -64,7 +66,7 @@ for arg in "$@"; do
 	esac
 done
 
-while getopts "hepcg:f:a:t:w:m:i:n:" option; do
+while getopts "hepcg:f:a:t:w:m:i:n:o:" option; do
 	case $option in
 		h) # display help
 			print_help
@@ -96,6 +98,9 @@ while getopts "hepcg:f:a:t:w:m:i:n:" option; do
 		m) # edgemincount parameter
 			argm=true
 			edgemincount="$OPTARG" ;;
+		o) # edgelongestcount parameter
+			argo=true
+			edgelongestcount="$OPTARG" ;;
 		n) # alternative chains parameter
 			argn=true
 			alternativechains="$OPTARG" ;;
@@ -137,6 +142,7 @@ if [[ "$argp" = true ]] ; then
 		$ignorecharsarg \
 		--threads $threads \
 		--approximate-edge-match-min-count $edgemincount \
+		--approximate-edge-match-longest $edgelongestcount \
 		$graph \
 		<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
 		"$workingfolder/$(basename $reads)_srfchain_seeds.gaf"
@@ -208,6 +214,7 @@ else
 	$efglocate --approximate --split-output-matches --reverse-complement --rename-reverse-complement --overwrite \
 		--threads $efglocatethreads \
 		--approximate-edge-match-min-count $edgemincount \
+		--approximate-edge-match-longest $edgelongestcount \
 		$graph \
 		<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
 		/dev/stdout | \

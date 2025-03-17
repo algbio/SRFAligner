@@ -44,7 +44,6 @@ python3 ../scripts/generate_sim_reads.py \
 $usrbintime $srfaligner \
 	-t $threads \
 	-g $inputgraph \
-	-m 0 \
 	-c \
 	-f output/sim_reads.fastq \
 	-a output/srfaligner_alignments.gaf \
@@ -53,7 +52,6 @@ $usrbintime $srfaligner \
 $usrbintime $srfchainer \
 	-t $threads \
 	-g $inputgraph \
-	-m 0 \
 	-c \
 	-f output/sim_reads.fastq \
 	-a output/srfchainer_alignments.gaf \
