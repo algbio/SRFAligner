@@ -208,7 +208,7 @@ else
 		set +eo pipefail ; { echo > $fastapipe & } ; set -eo pipefail
 	fi
 
-	efglocatethreads=$(load_balance $threads $edgemincount)
+	efglocatethreads=$(( $threads / 2 ))
 	chainxthreads=$(( $threads - $efglocatethreads ))
 	echo "load balance: $efglocatethreads for locate, $chainxthreads for chaining"
 	$efglocate --approximate --split-output-matches --reverse-complement --rename-reverse-complement --overwrite \
