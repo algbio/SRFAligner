@@ -5,7 +5,7 @@ HEADERS=-I ../sdsl-lite-v3/include -I ../concurrentqueue
 all : chainx-block-graph 
 
 chainx-block-graph : chainx-block-graph.cpp chainx-block-graph.hpp chaining.hpp efg.hpp command-line-parsing/cmdline.h command-line-parsing/cmdline.c
-	$(CXX) $(CPPFLAGS) $(HEADERS) \
+	gcc $(CPPFLAGS) $(HEADERS) \
 	chainx-block-graph.cpp command-line-parsing/cmdline.c \
 	-o chainx-block-graph
 

@@ -4,7 +4,7 @@ CPPFLAGS=-Ofast -march=native --std=c++20
 all : efg-gaf-splitter
 
 efg-gaf-splitter : efg-gaf-splitter.cpp efg.hpp command-line-parsing/cmdline.h command-line-parsing/cmdline.c
-	$(CXX) $(CPPFLAGS) \
+	gcc $(CPPFLAGS) \
 	efg-gaf-splitter.cpp command-line-parsing/cmdline.c \
 	-o efg-gaf-splitter
 

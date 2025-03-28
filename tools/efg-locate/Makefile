@@ -5,7 +5,7 @@ HEADERS=-I ../sdsl-lite-v3/include -I ../concurrentqueue
 all : efg-locate
 
 efg-locate : efg-locate.cpp efg.hpp algo.cpp command-line-parsing/cmdline.h command-line-parsing/cmdline.c
-	$(CXX) $(CPPFLAGS) $(HEADERS) \
+	gcc $(CPPFLAGS) $(HEADERS) \
 	efg-locate.cpp command-line-parsing/cmdline.c \
 	-o efg-locate
 
