@@ -2,6 +2,9 @@ experiments/vcf-to-hapl-to-efg/output
 experiments/vcf-to-hapl-to-efg/chr22_uppercase.fasta
 experiments/vcf-to-hapl-to-efg/1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz
 experiments/vcf-to-hapl-to-efg/1KGP.CHM13v2.0.chr22.recalibrated.snp_indel.pass.phased.vcf.gz.tbi
+experiments/vcf-to-hapl-to-efg/chm13v2.0.fa.gz
+experiments/vcf-to-hapl-to-efg/phased_T2T_panel.tar
+experiments/vcf-to-hapl-to-efg/chr22_iEFG.gfa
 
 tools/efg-locate/efg-locate
 tools/efg-locate/test/output-*
