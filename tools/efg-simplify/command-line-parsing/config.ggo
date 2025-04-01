@@ -1,0 +1,12 @@
+version	"devel"
+package	"efg-simplify"
+purpose	"Program to transform and simplify an Elastic Founder Graph given in xGFA format."
+usage	"efg-simplify inputgraph.xgfa simplifiedgraph.xgfa"
+
+description	"The program takes an Elastic Founder Graph in xGFA format and merges adjacent blocks that only contain parallel paths."
+
+option	"simplify-tunnels"	t	"for each maximal range of blocks to simplify, do not simplify first and last"	flag	off
+option	"rename-nodes"		r	"rename all node IDs to 0-indexed integers"	flag	off
+option	"ignore-only"	n	"consider in the simplification only blocks containing ignore characters"	flag	off
+option	"ignore-chars"		-	"Ignore characters"	string	optional
+option	"overwrite"	-	"overwrite the output file, if it exists"	flag	off

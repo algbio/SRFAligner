@@ -17,6 +17,8 @@ tools/efg-gaf-splitter/efg-gaf-splitter
 tools/efg-ahocorasick/efg-ahocorasick
 tools/efg-ahocorasick/extractor
 
+tools/efg-simplify/efg-simplify
+
 test/*.gaf
 
 experiments/aligner-evaluation/scripts/__pycache__
