@@ -37,3 +37,6 @@
 	path = tools/seqtk
 	url = https://github.com/lh3/seqtk
 	ignore = untracked
+[submodule "tools/daachorse"]
+	path = tools/daachorse
+	url = https://github.com/daac-tools/daachorse.git

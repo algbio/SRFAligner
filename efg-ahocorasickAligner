@@ -5,7 +5,8 @@ thisfolder=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ) 
 
 # executables' absolute paths/commands (make sure they work!)
 graphaligner=$thisfolder/tools/GraphAligner/bin/GraphAligner
-efgmems=$thisfolder/tools/efg-mems/efg-mems
+ahocorasick=$thisfolder/tools/efg-ahocorasick/efg-ahocorasick
+extractor=$thisfolder/tools/efg-ahocorasick/extractor
 efggafsplitter=$thisfolder/tools/efg-gaf-splitter/efg-gaf-splitter
 seqtk=$thisfolder/tools/seqtk/seqtk
 
@@ -15,7 +16,7 @@ extendoptions="--max-cluster-extend 5 -b 10" # GraphAligner default extend optio
 
 print_help()
 {
-   echo "Pipeline to align long reads to indexable Elastic Founder Graphs, based on MEMs"
+   echo "Pipeline to align long reads to indexable Elastic Founder Graphs, based on srf seeds"
    echo "Currently, only 1 compute thread is supported, and all intermediate seeds"
    echo " are saved in the working folder"
    echo "	-h --help:  show this screen"
@@ -70,22 +71,34 @@ else
 	workingfolder="."
 fi
 
+# extract nodes and ids
+$extractor $graph > "$workingfolder/nodes.txt" 2> "$workingfolder/nodeids.txt"
+
 # find efg-mems seeds
-$efgmems -a "ACGTXN#0" -k 20 --indexing --bdbwt \
-	-o "$workingfolder/efgmems_seeds_pre_split.gaf" \
-	<(cat <(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) <(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1 | sed 's/^>/>rev_/g' | $seqtk seq -r) | tr "N" "X") \
-	$graph
+# ahocorasick node_labels node_ids fasta_reads fasta_ids
+$ahocorasick \
+	"$workingfolder/nodes.txt" \
+	"$workingfolder/nodeids.txt" \
+	<(cat \
+		<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
+		<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1 | sed 's/^>/>rev_/g' | $seqtk seq -r) \
+		| grep -v "^>") \
+	<(cat \
+		<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
+		<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1 | sed 's/^>/>rev_/g' | $seqtk seq -r) \
+		| grep "^>" | tr -d ">") \
+	> "$workingfolder/ahocorasick_seeds_pre_split.gaf"
 
 # split seeds and reverse if needed
 $efggafsplitter \
 	$graph \
-	"$workingfolder/efgmems_seeds_pre_split.gaf" \
-	> "$workingfolder/efgmems_seeds.gaf"
+	"$workingfolder/ahocorasick_seeds_pre_split.gaf" \
+	> "$workingfolder/ahocorasick_seeds.gaf"
 
 # GraphAligner extend
 $graphaligner $extendoptions  \
 	-t 1 \
 	-g $graph \
 	-f $reads \
-	--realign "$workingfolder/efgmems_seeds.gaf" \
+	--realign "$workingfolder/ahocorasick_seeds.gaf" \
 	-a $alignmentsout

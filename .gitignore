@@ -14,6 +14,9 @@ tools/ChainX-block-graph/test/output-*
 
 tools/efg-gaf-splitter/efg-gaf-splitter
 
+tools/efg-ahocorasick/efg-ahocorasick
+tools/efg-ahocorasick/extractor
+
 test/*.gaf
 
 experiments/aligner-evaluation/scripts/__pycache__

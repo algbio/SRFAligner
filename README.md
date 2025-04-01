@@ -12,9 +12,7 @@ make
 ```
 and `GraphAligner`'s executable is expected to be found in folder `tools/GraphAligner/bin`, so you can run command `git submodule update --init --recursive tools/GraphAligner` and follow its [compilation instructions](https://github.com/maickrau/GraphAligner?tab=readme-ov-file#compilation). If `GraphAligner` is already installed in your system, you can just modify the relative line in `SRFAligner` and `SRFChainer`:
 ```console
-sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFAligner
-sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFChainer
-sed --in-place '7s/.*/graphaligner=GraphAligner/' efg-memsAligner
+sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFAligner SRFChainer efg-memsAligner efg-ahocorasickAligner
 ```
 Test the aligners with commands
 ```console
@@ -23,11 +21,21 @@ Test the aligners with commands
 ```
 
 ## prototype aligners
-To use MEM seeds computed by `efg-mems`, `efg-memsAligner` expects `efg-mems`'s executable to be in `tools/efg-mems/efg-mems`:
-```
-git submodule update --init --recursive tools/efg-mems
+To use MEM seeds computed by `efg-mems`, `efg-memsAligner` expects `efg-mems`'s executable to be in `tools/efg-mems/efg-mems` and [`seqtk`](https://github.com/lh3/seqtk) to be in `tools/seqtk`:
+```console
+git submodule update --init --recursive {tools/efg-mems,tools/seqtk}
+make -C tools/seqtk
 cd tools/efg-mems/sdsl-lite
 ./install.sh .
 cd ..
 cmake .
+make
+```
+
+Analogously, to use full node seeds computed by [`daachorse`](https://github.com/daac-tools/daachorse) (Aho-Corasick automaton of the node labels, requires Rust >= 1.61), `efg-ahocorasickAligner` expects `efg-ahocorasick` and `extractor` to be in `tools/efg-ahocorasick`, and [`seqtk`](https://github.com/lh3/seqtk) to be in `tools/seqtk`:
+
+```console
+git submodule update --init --recursive {tools/daachorse,tools/seqtk}
+make -C tools/seqtk
+make -C tools/efg-ahocorasick
 ```
