@@ -89,21 +89,21 @@ class Elasticfoundergraph {
 				}
 			}
 			if (!check()) {
-				exit(1);
+				// continue anyway
 			}
 		}
 
 		bool check() const
 		{
 			if (heights.size() != cuts.size()) {
-				std::cerr << "Error: number of cuts and blocks mismatch!" << std::endl;
+				std::cerr << "\nError: number of cuts and blocks mismatch!" << std::endl;
 				return false;
 			}
 
 			int block_sum = 0;
 			for (auto h : heights) block_sum += h;
 			if (block_sum != ordered_node_ids.size()) {
-				std::cerr << "Error: sum of block heights does not correspond to node number!" << std::endl;
+				std::cerr << "\nError: sum of block heights does not correspond to node number!" << std::endl;
 				return false;
 			}
 

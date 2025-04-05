@@ -28,6 +28,7 @@ experiments/aligner-evaluation/chaining/output
 experiments/aligner-evaluation/final/output
 experiments/aligner-evaluation/mems/output
 experiments/aligner-evaluation/vg-comparison/output
+experiments/aligner-evaluation/ahocorasick/output
 
 experiments/msa-validation/tmp*
 experiments/msa-validation/output_stats.txt

@@ -55,6 +55,7 @@ int main(int argc, char* argv[])
 		}
 		std::cerr << " done." << std::endl;
 	} else {
+		std::cerr << "Reading and splitting the seeds..." << std::flush;
 		GAFAnchor seed;
 		while (read_gaf_single(gaffs, graph, seed)) {
 			for (auto &b : seed.split_single_graphaligner(graph)) {
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
 				}
 				std::cout << b.to_string(graph) << std::endl;
 			}
-			std::cerr << " done." << std::endl;
 		}
+		std::cerr << " done." << std::endl;
 	}
 }
