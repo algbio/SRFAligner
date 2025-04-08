@@ -32,3 +32,9 @@ experiments/aligner-evaluation/ahocorasick/output
 
 experiments/msa-validation/tmp*
 experiments/msa-validation/output_stats.txt
+
+experiments/short-read-exact-match/input/chm13v2.0.fa.gz
+experiments/short-read-exact-match/input/chr22_iEFG.gfa
+experiments/short-read-exact-match/input/chr22_uppercase.fasta
+experiments/short-read-exact-match/input/ERR1025645_sample05_1.fq.gz
+experiments/short-read-exact-match/output

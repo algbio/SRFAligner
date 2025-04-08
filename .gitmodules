@@ -40,3 +40,6 @@
 [submodule "tools/daachorse"]
 	path = tools/daachorse
 	url = https://github.com/daac-tools/daachorse.git
+[submodule "tools/bwa"]
+	path = tools/bwa
+	url = https://github.com/lh3/bwa
