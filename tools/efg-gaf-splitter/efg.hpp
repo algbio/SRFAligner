@@ -72,16 +72,29 @@ class Elasticfoundergraph {
 					string id, label;
 
 					istringstream(line) >> c >> id >> label;
-					node_indexes[id] = nodes;
-					ordered_node_ids.push_back(id);
-					ordered_node_labels.push_back(label);
-
-					nodes += 1;
+					if (node_indexes.contains(id)) {
+						ordered_node_ids[node_indexes[id]] = id;
+						ordered_node_labels[node_indexes[id]] = label;
+					} else {
+						node_indexes[id] = nodes++;
+						ordered_node_ids.push_back(id);
+						ordered_node_labels.push_back(label);
+					}
 				} else if (line[0] == 'L') {
 					char c;
 					std::string id1, id2;
 					istringstream(line) >> c >> id1 >> c >> id2;
 
+					if (!node_indexes.contains(id1)) {
+						node_indexes[id1] = nodes++;
+						ordered_node_ids.push_back("");
+						ordered_node_labels.push_back("");
+					}
+					if (!node_indexes.contains(id2)) {
+						node_indexes[id2] = nodes++;
+						ordered_node_ids.push_back("");
+						ordered_node_labels.push_back("");
+					}
 					edges[node_indexes[id1]].push_back(node_indexes[id2]);
 				} else if (line[0] == 'P') {
 				} else {
@@ -91,6 +104,8 @@ class Elasticfoundergraph {
 			if (!check()) {
 				// continue anyway
 			}
+			for (const auto &id    : ordered_node_ids)    assert(id.size() > 0);
+			for (const auto &label : ordered_node_labels) assert(label.size() > 0);
 		}
 
 		bool check() const

@@ -90,46 +90,32 @@ class Elasticfoundergraph {
 					string id, label;
 
 					istringstream(line) >> c >> id >> label;
-					node_indexes[id] = nodes;
-					ordered_node_ids.push_back(id);
-					ordered_node_labels.push_back(label);
-
-					nodes += 1;
+					if (node_indexes.contains(id)) {
+						ordered_node_ids[node_indexes[id]] = id;
+						ordered_node_labels[node_indexes[id]] = label;
+					} else {
+						node_indexes[id] = nodes++;
+						ordered_node_ids.push_back(id);
+						ordered_node_labels.push_back(label);
+					}
 				} else if (line[0] == 'L') {
 					char c;
 					std::string id1, id2;
 					istringstream(line) >> c >> id1 >> c >> id2;
 
+					if (!node_indexes.contains(id1)) {
+						node_indexes[id1] = nodes++;
+						ordered_node_ids.push_back("");
+						ordered_node_labels.push_back("");
+					}
+					if (!node_indexes.contains(id2)) {
+						node_indexes[id2] = nodes++;
+						ordered_node_ids.push_back("");
+						ordered_node_labels.push_back("");
+					}
 					edges[node_indexes[id1]].push_back(node_indexes[id2]);
 				} else if (line[0] == 'P') {
-					char c;
-					string walkid, node;
-					vector<int> walk;
-					vector<bool> orientation;
-					istringstream stream(line);
-
-					stream >> c >> walkid >> std::ws; // read 'P', id, and whitespace
-					walk_ids.push_back(walkid);
-
-					{
-						string walkstring;
-						std::getline(stream, walkstring, '\t');
-						istringstream walkstream(walkstring);
-						std::swap(stream, walkstream);
-					}
-					while (std::getline(stream, node, ',')) {
-						assert(node_indexes.find(node.substr(0, node.size() - 1)) != node_indexes.end());
-						walk.push_back(node_indexes[node.substr(0, node.size() - 1)]);
-						if (node[node.size()-1] == '+')
-							orientation.push_back(true);
-						else if (node[node.size()-1] == '-')
-							orientation.push_back(false);
-						else
-							assert(false);
-					}
-
-					walks.push_back(walk);
-					orientations.push_back(orientation);
+					// do nothing
 				} else {
 					std::cerr << "Unrecognized line " << line[0] << ": skipping..." << std::endl;
 				}
@@ -137,6 +123,8 @@ class Elasticfoundergraph {
 			if (!check()) {
 				exit(1);
 			}
+			for (const auto &id    : ordered_node_ids)    assert(id.size() > 0);
+			for (const auto &label : ordered_node_labels) assert(label.size() > 0);
 
 			block = vector<int>(ordered_node_ids.size());
 			for (int b = 0, i = 0; b < heights.size(); b++) {
