@@ -131,5 +131,5 @@ echo " done."
 # 3. MSA -> iEFG
 #
 echo -n "Building the indexable Elastic Founder Graph..."
-/usr/bin/time $founderblockgraph --elastic --gfa --ignore-chars="N" --output-paths --threads=$threads --input=sampled_haplotypes.a2m --output=efg-unsimplified.gfa $heuristicsubset >> $log 2>> $log
+/usr/bin/time $founderblockgraph --ignore-chars="N" --output-paths --threads=$threads --input=sampled_haplotypes.a2m --output=efg-unsimplified.gfa $heuristicsubset >> $log 2>> $log
 echo " done."
