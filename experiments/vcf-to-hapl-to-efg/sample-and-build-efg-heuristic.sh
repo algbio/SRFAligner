@@ -25,7 +25,7 @@ print_help()
    echo "	-h --help:  show this screen"
    echo "	-f reference:  reference (FASTA format)                 used to generate MSA"
    echo "	-v variation:  variation (VCF format, possibly gzipped) used to generate MSA"
-   echo "	-c chromosome: chromosome name                          used to generate MSA (see vcf2multialign)"
+   echo "	-c chromosome: chromosome name                          used to generate MSA (see bcftools and vcf2multialign)"
    echo "	-s nhapl: sample the haplotype list and keep 'nhapl' random haplotypes"
    echo "	-M Mrows: set parameter --heuristic-subset='Mrows' for iEFG construction (see founderblockgraph)"
    echo "	-t threads: threads used in iEFG construction                            (see founderblockgraph)"
@@ -50,7 +50,7 @@ while getopts "hf:v:c:r:s:M:t:" option; do
 		v) # fasta + vcf input : vcf
 			argv=true
 			vcf="$(realpath $OPTARG)" ;;
-		c) # fasta + vcf input : chromosome for vcf2multialign
+		c) # fasta + vcf input : chromosome for bcftools/vcf2multialign
 			argc=true
 			chromosome="$OPTARG" ;;
 		s) # number of samples
@@ -103,7 +103,7 @@ echo -n "Sampling the vcf..."
 # TODO I am expecting the haplotypes to be after the 9th field specified by the VCF header, is this always correct?
 $bcftools query -l $vcf > haplotypes
 cat haplotypes | shuf -n $nhapl --random-source=<(get_seeded_random "semi-repeat-free") > sampled_haplotypes
-$bcftools view --samples-file sampled_haplotypes $vcf > sampled_haplotypes.vcf
+$bcftools view --regions $chromosome --samples-file sampled_haplotypes $vcf > sampled_haplotypes.vcf
 # FIX for the T2T 1KGP data and vcf2multialign, see https://github.com/tsnorri/vcf2multialign/issues/5
 sed -i 's/e+06//g' sampled_haplotypes.vcf
 sed -i 's/INFO=<ID=AC,Number=1/INFO=<ID=AC,Number=A/g' sampled_haplotypes.vcf
