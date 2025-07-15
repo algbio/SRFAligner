@@ -18,10 +18,6 @@ chainingguess="--initial-guess-coverage=0.5 --ramp-up-factor=1.5"
 extendoptions="--max-cluster-extend 5 -b 10" # GraphAligner default extend options
 discardoption="(substr(\$16,6) > 0.90) && ((\$4-\$3)*100/\$2 >= 50)" # using -c option, discard alignments with identity <= 90% or read coverage < 50%
 
-# load balancing
-locatework=(32 32 22 14 14 11 10 9 8 7 6)
-chainwork=(8 25 32 32 32 32 32 32 32 32 32)
-
 print_help()
 {
    echo "Pipeline to align long reads to indexable Elastic Founder Graphs based on chained semi-repeat-free seeds"
@@ -32,29 +28,13 @@ print_help()
    echo "	-a alignmentsout.gaf: output alignments in GAF format"
    echo "	-t threads: # of threads"
    echo "	-i IGNORECHARS : ignore the following characters for indexability/seed finding"
-   echo "	-c : discard bad alignments (identity <= 0.9 or read coverage < 50%) and run GraphAligner on unaligned reads"
+   echo "	-c : call GraphAligner with more expensive extend options"
    echo "	-p : disable pipeline mode and save the seeds in working folder"
    echo "	-e : make GraphAligner consider each single seed (cluster) for extension"
    echo "	-m edgemincount:     heuristic parameter for seed computation (see efg-locate)"
    echo "	-o edgelongestcount: heuristic parameter for seed computation (see efg-locate)"
    echo "	-n altchains : heuristic parameter to chain an additional n times for each strand"
    echo "	-w path: working folder for output and temporary files"
-}
-
-load_balance()
-{
-	m=$2
-	if (( $m >= ${#locatework[@]} ))
-	then
-		m=$(( ${#locatework[@]} - 1 ))
-	fi
-
-
-	threads1=$(( $1 * ${chainwork[$m]} / (${chainwork[$m]} + ${locatework[$m]})))
-	threads1=$(( threads1 >= $1 ? $1 - 1 : threads1 ))
-	threads1=$(( threads1  <  1 ?      1 : threads1 ))
-
-	echo "$(($1 - $threads1))"
 }
 
 # https://stackoverflow.com/questions/12022592/how-can-i-use-long-options-with-the-bash-getopts-builtin
@@ -89,7 +69,7 @@ while getopts "hepcg:f:a:t:w:m:i:n:o:" option; do
 		w) # working folder
 			argw=true
 			workingfolder="$OPTARG" ;;
-		c) # discard short alignment heuristic flag
+		c) # extendplus
 			argc=true ;;
 		p) # disable pipeline mode flag
 			argp=true ;;
@@ -114,7 +94,10 @@ if [[ "$argg" != true ]] || [[ "$argf" != true ]] ; then
 	print_help
 	exit
 fi
-
+if [[ "$argc" = true ]] && [[ "$arge" = true ]] ; then
+	print_help
+	exit
+fi
 if [[ "$argp" != true ]] && [[ "$threads" -lt 2 ]] ; then
 	echo "Please pick at least 2 threads in pipeline mode!"
 	exit 1
@@ -124,7 +107,9 @@ ignorecharsarg=""
 if [[ "$argi" = true ]] ; then
 	ignorecharsarg="--ignore-chars=$ignorechars"
 fi
-
+if [[ "$argc" = true ]] ; then
+	extendoptions="--max-cluster-extend 10 -b 50"
+fi
 if [[ "$arge" = true ]] ; then
 	extendoptions="--max-cluster-extend -1 --multimap-score-fraction 0.00 -b 10"
 fi
@@ -162,52 +147,8 @@ if [[ "$argp" = true ]] ; then
 		-f $reads \
 		--realign "$workingfolder/$(basename $reads)_srfchain_chain.gaf" \
 		-a $alignmentsout
-
-	if [[ "$argc" = true ]] ; then
-		echo -n "Filtering alignments with identity <= 90% or read coverage < 50%..."
-		awk "{if ($discardoption) {print}}" "$alignmentsout" > "$workingfolder/filtered_alignments_$$.gaf"
-		mv "$workingfolder/filtered_alignments_$$.gaf" "$alignmentsout"
-		echo " done."
-
-		unalignedreads=$({ grep -v \
-				-f <(cut -f1 $alignmentsout | uniq) \
-				<(awk 'NR % 4 == 1' $reads | cut -d' ' -f1 | tr -d "@") || true; })
-		unalignedreadscount=$(echo -n "$unalignedreads" | wc -l)
-		if [[ "$unalignedreadscount" -gt "0" ]] ; then
-			grep -A 1 --no-group-separator \
-				-f <(echo "$unalignedreads") \
-				<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
-				> "$workingfolder/$(basename $reads)_unaligned_reads.fasta"
-
-			$graphaligner -x "vg" \
-				-t $threads \
-				-g $graph \
-				-f "$workingfolder/$(basename $reads)_unaligned_reads.fasta" \
-				-a "$workingfolder/$(basename $reads)_unaligned_reads.gaf"
-			cat "$workingfolder/$(basename $reads)_unaligned_reads.gaf" >> $alignmentsout
-		else
-			echo "There are no unaligned reads to realign"
-		fi
-	fi
 else
 	# pipeline of above commands
-
-	if [[ "$argc" = true ]] ; then
-		# set up final GraphAligner call
-		fastapipe=$(mktemp -u --suffix ".fasta")
-		mkfifo -m 600 $fastapipe
-		trap '{ rm -f -- "$fastapipe"; }' EXIT
-
-		# TODO find a way to not store on disk the unaligned alignments and directly append them
-		$graphaligner -x "vg" \
-			-t $threads \
-			-g $graph \
-			-f $fastapipe \
-			-a "$workingfolder/unaligned_reads_$$.gaf" &
-		# give GraphAligner a dummy "file", see https://github.com/maickrau/GraphAligner/issues/105
-		set +eo pipefail ; { echo > $fastapipe & } ; set -eo pipefail
-	fi
-
 	efglocatethreads=$(( $threads / 2 ))
 	chainxthreads=$(( $threads - $efglocatethreads ))
 	echo "load balance: $efglocatethreads for locate, $chainxthreads for chaining"
@@ -230,31 +171,4 @@ else
 		-f $reads \
 		--realign /dev/stdin \
 		-a $alignmentsout
-
-	if [[ "$argc" = true ]] ; then
-		echo -n "Filtering alignments with identity <= 90% or read coverage < 50%..."
-		awk "{if ($discardoption) {print}}" "$alignmentsout" > "$workingfolder/filtered_alignments_$$.gaf"
-		mv "$workingfolder/filtered_alignments_$$.gaf" "$alignmentsout"
-		echo " done."
-
-		unalignedreads=$({ grep -v \
-				-f <(cut -f1 $alignmentsout | uniq) \
-				<(awk 'NR % 4 == 1' $reads | cut -d' ' -f1 | tr -d "@") || true; })
-		unalignedreadscount=$(echo -n "$unalignedreads" | wc -l)
-		if [[ "$unalignedreadscount" -gt "0" ]] ; then
-			echo "There are the following unaligned reads:"
-			echo "$unalignedreads"
-			grep -A 1 --no-group-separator \
-				-f <(echo "$unalignedreads") \
-				<(awk 'NR % 4 == 1 || NR % 4 == 2' $reads | sed 's/^@/>/g' | cut -d' ' -f1) \
-				> $fastapipe
-			wait $(jobs -p)
-		else
-			echo "There are no unaligned reads to realign"
-			set +eo pipefail ; { kill $(jobs -p) & } ; set -eo pipefail
-		fi
-
-		cat "$workingfolder/unaligned_reads_$$.gaf" >> $alignmentsout
-		rm "$workingfolder/unaligned_reads_$$.gaf"
-	fi
 fi

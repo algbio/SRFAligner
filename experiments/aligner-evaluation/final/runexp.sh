@@ -10,9 +10,7 @@ BADREAD=$thisfolder/../../../tools/Badread/badread-runner.py
 GRAPHCHAINER=$thisfolder/../../../tools/GraphChainer/bin/GraphChainer
 srfaligner=$thisfolder/../../../SRFAligner
 srfchainer=$thisfolder/../../../SRFChainer
-graphchainer=$thisfolder/../../../tools/GraphChainer/bin/GraphChainer
 minigraph=$thisfolder/../../../tools/minigraph/minigraph
-minichain=$thisfolder/../../../tools/minichain/minichain
 usrbintime=/usr/bin/time
 
 # params
@@ -44,6 +42,7 @@ python3 ../scripts/generate_sim_reads.py \
 $usrbintime $srfaligner \
 	-t $threads \
 	-g $inputgraph \
+	-o 50 \
 	-c \
 	-f output/sim_reads.fastq \
 	-a output/srfaligner_alignments.gaf \
@@ -52,18 +51,20 @@ $usrbintime $srfaligner \
 $usrbintime $srfchainer \
 	-t $threads \
 	-g $inputgraph \
+	-o 50 \
 	-c \
 	-f output/sim_reads.fastq \
 	-a output/srfchainer_alignments.gaf \
 	2>> output/runexp_log.txt >> output/runexp_log.txt
 
-cat output/sim_reads.fastq | cut -d' ' -f1 > output/sim_reads_fixed_header.fastq
-$usrbintime $graphchainer \
-	-t $threads \
-	-g $inputgraph \
-	-f output/sim_reads_fixed_header.fastq \
-	-a output/graphchainer_alignments.gaf \
-	2>> output/runexp_log.txt >> output/runexp_log.txt
+$usrbintime $graphaligner \
+        -t $threads \
+        -x "vg" \
+        -g $inputgraph \
+        -f output/sim_reads.fastq \
+        -a output/graphaligner_extend_alignments.gaf \
+        --max-cluster-extend 10 -b 50 \
+        2>> output/runexp_log.txt >> output/runexp_log.txt
 
 $usrbintime $minigraph \
 	-t $threads \
@@ -74,15 +75,8 @@ $usrbintime $minigraph \
 	-o output/minigraph_alignments.gaf \
 	2>> output/runexp_log.txt >> output/runexp_log.txt
 
-$usrbintime $minichain \
-	-t $threads \
-	-c $inputgraph \
-	output/sim_reads.fastq \
-	-o output/minichain_alignments.gaf \
-	2>> output/runexp_log.txt >> output/runexp_log.txt
-
 # 3. pick first alignment
-for alignment in "srfaligner_alignments.gaf" "srfchainer_alignments.gaf" "graphchainer_alignments.gaf" "minigraph_alignments.gaf" "minichain_alignments.gaf"
+for alignment in "srfaligner_alignments.gaf" "srfchainer_alignments.gaf" "graphaligner_extend_alignments.gaf"
 do
 	awk '{if (found[$1] == "1") \
 	          {} \
@@ -92,7 +86,7 @@ do
 done
 
 # 4. validate and plot results
-for alignment in best_srfaligner best_srfchainer best_graphchainer minigraph minichain
+for alignment in best_srfaligner best_srfchainer best_graphaligner_extend minigraph
 do
 	python3 ../scripts/compute_summary.py \
 		-t 3 \
