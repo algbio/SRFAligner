@@ -43,3 +43,6 @@
 [submodule "tools/bwa"]
 	path = tools/bwa
 	url = https://github.com/lh3/bwa
+[submodule "tools/vg"]
+	path = tools/vg
+	url = https://github.com/vgteam/vg
