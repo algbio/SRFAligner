@@ -12,7 +12,7 @@ make
 ```
 `GraphAligner`'s executable is expected to be found in `tools/GraphAligner/bin`, so you can run command `git submodule update --init --recursive tools/GraphAligner` and follow its [compilation instructions](https://github.com/maickrau/GraphAligner?tab=readme-ov-file#compilation), or if `GraphAligner` is already installed in your system, you can just modify the relative line in the appropriate programs with
 ```console
-sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFAligner SRFChainer efg-memsAligner efg-ahocorasickAligner
+sed --in-place '7s/.*/graphaligner=GraphAligner/' SRFAligner SRFChainer gcsa2Aligner efg-memsAligner efg-ahocorasickAligner
 ```
 Finally, test your setup with
 ```console
@@ -22,6 +22,16 @@ Finally, test your setup with
 
 ## prototype aligners
 As part of our experiments, we also developed two other interesting aligners: `efg-ahocorasickAligner` and `efg-memsAligner`.
+
+### vg graphs
+We can adapt the same seed-and-extend strategy of `SRFAligner` on an arbitrary bidirected graph, when (a manageable subgraph is) indexed for exact pattern matching via [GCSA2](https://github.com/jltsiren/gcsa2). Bash program `gcsa2Aligner` uses [`gcsa2-locate`](tools/gcsa2-locate) (from this repository) and `GraphAligner`. Get and compile the dependencies of `gcsa2Aligner` with
+```
+git submodule update --init --recursive tools/{gcsa2,vgteam-sdsl-lite,concurrentqueue}
+./tools/vgteam-sdsl-lite/install.sh tools/vgteam-sdsl-lite/local-install
+sed --in-place '1s/.*/SDSL_DIR=..\/vgteam-sdsl-lite/' tools/gcsa2/Makefile
+make -C tools/gcsa2
+make -C tools/gcsa2-locate
+```
 
 ### Full node seeds via the Aho-Corasick automaton
 To use full node seeds computed by the Aho-Corasick automaton of the iEFG node labels (based on [`daachorse`](https://github.com/daac-tools/daachorse), requires Rust >= 1.61), `efg-ahocorasickAligner` depends on [`efg-ahocorasick`](tools/efg-ahocorasick) and [`efg-gaf-splitter`](tools/efg-gaf-splitter) (from this repository); [`seqtk`](https://github.com/lh3/seqtk) is expected to be in `tools/seqtk`. Compile all three with

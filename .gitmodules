@@ -46,3 +46,11 @@
 [submodule "tools/vg"]
 	path = tools/vg
 	url = https://github.com/vgteam/vg
+[submodule "tools/gcsa2"]
+	path = tools/gcsa2
+	url = https://github.com/jltsiren/gcsa2
+	ignore = dirty
+[submodule "tools/vgteam-sdsl-lite"]
+	path = tools/vgteam-sdsl-lite
+	url = https://github.com/vgteam/sdsl-lite
+	ignore = untracked

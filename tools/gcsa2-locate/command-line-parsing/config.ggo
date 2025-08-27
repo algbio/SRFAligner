@@ -1,0 +1,15 @@
+version	"0.1"
+package	"gcsa2-locate"
+purpose	"Program performing exact and approximate pattern matching on a GFA/GCSA2 graph/index pair"
+usage	"gcsa2-locate graph.gfa index.gcsa patterns.fasta {paths.gaf,seeds.gaf}"
+
+description	"The program accepts in input a GFA graph/GCSA2 index pair (following vg's format) and finds exact occurrences or computes semi-repeat-free seeds between the input reads (FASTA) and the graph. The occurrences/seeds might be false positives, depending on how the GCSA2 index was constructed, and are truncated to span only one node, so they mainly indicate the starting position in the graph and they need to be extended."
+
+option	"ignore-chars"					-	"Ignore these characters for pattern matching, breaking up each pattern into maximal strings of non-ignore characters"	string	optional
+option	"approximate"					-	"Approximate pattern matching by greedily matching the pattern in the graph and starting over when the matching fails; output only the recognized matches corresponding to a lexicographic singleton"	flag	off
+option	"approximate-edge-match-longest"		-	"In approximate mode (--approximate), also output the the COUNT longest exact matches found"	int	typestr = "COUNT"	default = "0"	optional
+option	"approximate-edge-match-longest-max-count"	-	"In approximate mode (--approximate), do not output the longest matches whose lexicographic range is bigger then COUNT"	long typestr = "COUNT"	default = "1000"	optional
+option	"reverse-complement"				-	"Match also the reverse complement of the patterns and output the match/seed as a reverse graph path (useful when the GCSA2 index is built only forward)"	flag	off
+option	"split-output-matches-graphaligner"		-	"Filter out matches of length 1 (for use with GraphAligner --extend)"	flag off
+option	"threads"					t	"Number of compute threads"		long	typestr = "THREADNUM"	default = "-1"	optional
+option	"overwrite"					-	"Overwrite the output file, if it exists"	flag	off
