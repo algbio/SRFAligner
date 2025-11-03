@@ -43,6 +43,19 @@ cmake .
 make
 ```
 
+## corrections
+In the exact matching experiment results ([experiments/short-read-exact-match](experiments/short-read-exact-match) and Section 5.2 of the [paper](https://doi.org/10.1093/bioinformatics/btaf225)), we claim that `vg` did not manage to match 338M short reads on the chr22 `vg` graph in less than 24 hours, when actually it is `vg index` (indexing the whole graph) that did not complete in the timeout time.
+This is not the recommended `vg` workflow and it's an unfair comparison, considering iEFG construction is expensive and does not index all paths of the input graph.
+With the recommended `vg autoindex` workflow, on an Intel Core i3-1315U laptop the results from [experiments/short-read-exact-match](experiments/short-read-exact-match) and [experiments/vcf-to-hapl-to-efg](experiments/vcf-to-hapl-to-efg) are
+
+| chr22 reference   | mapper       | constr+index time (t = 4) | mapping time (t = 4) | (t = 1) | mapped reads | % mapped |
+|-------------------|--------------|---------------------------|----------------------|---------|--------------|----------|
+|    linear         | `bwa`        |                       25s |                0.42h |   0.62h |      6833767 |     2.02 |
+| pruned `vg` graph | `vg map`     |                    3m+11m |                0.88h |   2.61h |      7012628 |     2.07 |
+|     iEFG          | `efg-locate` |                       34h |                1.56h |   2.50h |      7067538 |     2.09 |
+
+confirming the feasability of matching in iEFGs after their construction.
+
 ## publication
 > Nicola Rizzo, Manuel Cáceres, Veli Mäkinen.
 > [*Exploiting uniqueness: seed-chain-extend alignment on elastic founder graphs*](https://doi.org/10.1093/bioinformatics/btaf225).

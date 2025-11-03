@@ -4,11 +4,12 @@ We compare the short-read exact matching solution of `efg-locate` on the chromos
 ## Prerequisites
 Script `runexp.sh` expects `efg-locate`, `bwa`, `seqtk`, and `vg` to be located in folders `tools/efg-locate`, `tools/bwa`, `tools/seqtk`, and `tools/vg/bin` from the root of this repository. You can download and compile them with the following commands (executed from this folder):
 ```console
+git submodule update --init ../../tools/{sdsl-lite-v3,concurrentqueue}
 make -C ../../tools/efg-locate
 git submodule update --init ../../tools/{bwa,seqtk}
-mkdir --parents ../../tools/vg/bin && wget https://github.com/vgteam/vg/releases/download/v1.67.0/vg --output-document=../../tools/vg/bin
 make -C ../../tools/bwa
 make -C ../../tools/seqtk
+mkdir --parents ../../tools/vg/bin && wget https://github.com/vgteam/vg/releases/download/v1.68.0/vg --output-document=../../tools/vg/bin/vg && chmod a+x ../../tools/vg/bin/vg
 ```
 
 ## Datasets
@@ -24,5 +25,6 @@ wget 'https://cs.helsinki.fi/group/gsa/panvc-founders/scalability-experiment/rea
 and the chromosome 22 reference (1GB) with
 ```console
 wget "https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/chm13v2.0.fa.gz" --output-document=input/chm13v2.0.fa.gz
+export PATH=$PATH:$(pwd)/../../tools/seqtk
 seqtk subseq input/chm13v2.0.fa.gz <(echo "chr22") | seqtk seq -U - > input/chr22_uppercase.fasta
 ```
