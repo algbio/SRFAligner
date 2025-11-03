@@ -120,16 +120,19 @@ echo -n "Computing the MSA..."
 	--chromosome $chromosome \
 	--output-graph variant.graph >> $log 2>> $log
 
+echo -e '#!/bin/bash\npigz -p '"$threads"' -c > sampled_haplotypes.a2m.gz' > output-gzip-sampled_haplotypes.sh && chmod a+x output-gzip-sampled_haplotypes.sh
 /usr/bin/time $vcf2multialign \
 	--input-reference=$reference \
 	--input-graph variant.graph \
 	-H \
-	-s sampled_haplotypes.a2m >> $log 2>> $log
+	-s sampled_haplotypes.a2m \
+	--pipe "$outputfolder/output-gzip-sampled_haplotypes.sh" \
+	>> $log 2>> $log
 echo " done."
 
 #
 # 3. MSA -> iEFG
 #
 echo -n "Building the indexable Elastic Founder Graph..."
-/usr/bin/time $founderblockgraph --ignore-chars="N" --output-paths --threads=$threads --input=sampled_haplotypes.a2m --output=efg-unsimplified.gfa $heuristicsubset >> $log 2>> $log
+/usr/bin/time $founderblockgraph --ignore-chars="N" --output-paths --threads=$threads --input=sampled_haplotypes.a2m.gz --output=efg-unsimplified.gfa $heuristicsubset >> $log 2>> $log
 echo " done."

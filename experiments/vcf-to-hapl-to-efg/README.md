@@ -13,13 +13,13 @@ grep -v "^P" output/efg-unsimplified.gfa > chr22_iEFG.gfa
 ```
 
 ## Prerequisites
-The pipeline expects [`bcftools`](https://www.htslib.org/download/) and [`vcf2multialign`](https://github.com/tsnorri/vcf2multialign) to be found in the search path variable `PATH`, and expects `founderblockgraph` to be in folder `tools/founderblockgraph` from the root of this repository. You can get and compile `founderblockgraph` with
+The pipeline expects [`pigz`](https://www.zlib.net/pigz/), [`bcftools`](https://www.htslib.org/download/), and [`vcf2multialign`](https://github.com/tsnorri/vcf2multialign) to be found in the search path variable `PATH`, and expects `founderblockgraph` to be in folder `tools/founderblockgraph` from the root of this repository. You can get and compile `founderblockgraph` with
 ```console
 git submodule update --init --recursive ../../tools/founderblockgraphs
 make -C ../../tools/founderblockgraphs
 ```
 
-In case you obtain `bcftools` and `vcf2multialign` in a different way, modify lines 11-13 of `sample-and-build-efg-heuristic.sh` accordingly. To manipulate FASTQ files in the next section, we also use [`seqtk`](https://github.com/lh3/seqtk).
+In case you obtain the tools in a different way, modify lines 11-13 of `sample-and-build-efg-heuristic.sh` accordingly. To manipulate FASTQ files in the next section, we also use [`seqtk`](https://github.com/lh3/seqtk).
 
 ## Datasets and obtaining the input data
 We use the [phased T2T 1KGP panel](https://zenodo.org/records/7612953) (Version 1.0) by Joseph Lalli, based on [T2T-CHM13v2.0](https://github.com/marbl/CHM13). We can easily obtain chromosome 22 with
@@ -39,18 +39,14 @@ You can validate that the iEFG was correctly built from the MSA rows with `efg-l
 ```console
 ../../tools/efg-locate/efg-locate -t 64 --overwrite \
     output/efg-unsimplified.gfa \
-    <(awk '{if (substr($0, 0, 1) == ">") {print} else {gsub(/-/, "", $0); print $0}}' \
-        output/sampled_haplotypes.a2m) \
+    <(zcat output/sampled_haplotypes.a2m.gz | awk '{if (substr($0, 0, 1) == ">") {print} else {gsub(/-/, "", $0); print $0}}' -) \
     /dev/null
 ```
 
-## Versions of the software used
+## Versions of the software used in the paper
 | Tool              |          Version |
 | ----------------- | ---------------- |
 | founderblockgraph | 439ef67 (GitHub) |
 | vcf2multialign    |    1.2.2 23f3f42 |
 | seqtk             |   1.4-r130-dirty |
 | bcftools          |             1.20 |
-
-## todo
-- [] gzip some of the intermediate files
