@@ -7,15 +7,14 @@
 
 //#define GRAPH_HPP_DEBUG
 
-using std::vector, std::istringstream, std::unordered_map;
+using std::vector, std::istringstream, std::unordered_map, std::stol;
 
 namespace graph {
 
 class SimpleGraph {
 	private:
 		long int nodes = 0;
-		vector<string> node_ids;
-		unordered_map<string,string> ids_to_labels;
+		unordered_map<unsigned long,string> ids_to_labels;
 
 	public:
 		SimpleGraph(std::ifstream &graphstream)
@@ -28,8 +27,7 @@ class SimpleGraph {
 					string id, label;
 
 					istringstream(line) >> c >> id >> label;
-					node_ids.push_back(id);
-					ids_to_labels[id] =label;
+					ids_to_labels[stol(id)] =label;
 					nodes += 1;
 				} else if (line[0] == 'L') {
 					// do nothing
@@ -43,8 +41,8 @@ class SimpleGraph {
 		}
 
 		long int get_label_length(unsigned long n) const {
-			assert(n > 0 and n-1 < node_ids.size());
-			return ids_to_labels.at(node_ids.at(n-1)).length();
+			assert(n < ids_to_labels.size());
+			return ids_to_labels.at(n).length();
 		}
 };
 

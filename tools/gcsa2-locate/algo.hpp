@@ -57,7 +57,7 @@ void reader_worker(std::ifstream &patternsfs, std::atomic<bool> &input_done)
 					std::this_thread::sleep_for(std::chrono::milliseconds(10));
 				pattern.clear();
 			}
-			patternid = line.substr(1);
+			patternid = line.substr(1, line.find_first_of(" \f\n\r\t\v") - 1);
 		} else if (line.size() >= 1 and line[0] != '>') {
 			pattern += line;
 		}
@@ -94,6 +94,7 @@ void inline output_gcsa_matches(const SimpleGraph &graph, const string &pattern,
 		const auto offset = gcsa::Node::offset(n);
 		const auto graph_node_length = graph.get_label_length(node);
 		const auto match_length = std::min(qend - qstart + 1, graph_node_length - offset);
+		assert(offset < graph_node_length);
 		if (splitoutputmatchesgraphaligner and match_length == 1) continue;
 		match.push_back(GAFAnchor(
 					pattern_id,
